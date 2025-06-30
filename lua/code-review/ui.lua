@@ -68,11 +68,19 @@ function M.show_comment_input(callback, context)
   local function close_with_text()
     local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
     local text = table.concat(lines, "\n")
+    -- Leave insert mode before closing
+    if vim.fn.mode() == 'i' then
+      vim.cmd('stopinsert')
+    end
     vim.api.nvim_win_close(win, true)
     callback(text)
   end
 
   local function close_cancelled()
+    -- Leave insert mode before closing
+    if vim.fn.mode() == 'i' then
+      vim.cmd('stopinsert')
+    end
     vim.api.nvim_win_close(win, true)
     callback(nil)
   end
