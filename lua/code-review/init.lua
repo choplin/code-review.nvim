@@ -49,6 +49,10 @@ function M.setup(opts)
     M.list_comments()
   end, { desc = "List all comments" })
 
+  vim.api.nvim_create_user_command("CodeReviewDeleteComment", function()
+    M.delete_comment_at_cursor()
+  end, { desc = "Delete comment at cursor position" })
+
   -- Setup keymaps if enabled
   local keymaps = config.get("keymaps")
   if keymaps then
@@ -73,6 +77,7 @@ function M.setup(opts)
             copy = "Copy review to clipboard",
             show_comment = "Show comment at cursor",
             list_comments = "List all comments",
+            delete_comment = "Delete comment at cursor",
           }
 
           local func = {
@@ -85,6 +90,7 @@ function M.setup(opts)
             copy = M.copy,
             show_comment = M.show_comment_at_cursor,
             list_comments = M.list_comments,
+            delete_comment = M.delete_comment_at_cursor,
           }
 
           if func[action] then
@@ -223,6 +229,69 @@ end
 --- List all comments
 function M.list_comments()
   require("code-review.list").list_comments()
+end
+
+--- Delete comment at cursor position
+function M.delete_comment_at_cursor()
+  state.ensure_active()
+  local comments = state.get_comments()
+  if #comments == 0 then
+    return
+  end
+
+  local bufnr = vim.api.nvim_get_current_buf()
+  local file = utils.normalize_path(vim.api.nvim_buf_get_name(bufnr))
+  local row = vim.api.nvim_win_get_cursor(0)[1]
+
+  -- Find comments for current line
+  local line_comments = {}
+  for _, comment_data in ipairs(comments) do
+    if comment_data.file == file and row >= comment_data.line_start and row <= comment_data.line_end then
+      table.insert(line_comments, comment_data)
+    end
+  end
+
+  if #line_comments == 0 then
+    vim.notify("No comment at cursor position", vim.log.levels.WARN)
+    return
+  end
+
+  -- If multiple comments, let user choose
+  if #line_comments > 1 then
+    vim.ui.select(line_comments, {
+      prompt = "Select comment to delete:",
+      format_item = function(item)
+        local first_line = item.comment:match("^[^\n]*") or item.comment
+        if #first_line > 50 then
+          first_line = first_line:sub(1, 47) .. "..."
+        end
+        return string.format("Line %d-%d: %s", item.line_start, item.line_end, first_line)
+      end,
+    }, function(choice)
+      if choice then
+        state.delete_comment(choice.id)
+        require("code-review.comment").update_indicators()
+        vim.notify("Comment deleted")
+      end
+    end)
+  else
+    -- Single comment, confirm deletion
+    local comment = line_comments[1]
+    local first_line = comment.comment:match("^[^\n]*") or comment.comment
+    if #first_line > 50 then
+      first_line = first_line:sub(1, 47) .. "..."
+    end
+
+    vim.ui.select({ "Yes", "No" }, {
+      prompt = string.format("Delete comment: %s?", first_line),
+    }, function(choice)
+      if choice == "Yes" then
+        state.delete_comment(comment.id)
+        require("code-review.comment").update_indicators()
+        vim.notify("Comment deleted")
+      end
+    end)
+  end
 end
 
 --- Get input buffer functions for keymapping
