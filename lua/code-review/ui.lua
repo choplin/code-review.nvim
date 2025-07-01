@@ -12,6 +12,10 @@ function M.show_comment_input(callback, context)
   local buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
   vim.api.nvim_buf_set_option(buf, "filetype", "markdown")
+  -- Enable word wrap
+  vim.api.nvim_buf_set_option(buf, "wrap", true)
+  vim.api.nvim_buf_set_option(buf, "linebreak", true)
+  vim.api.nvim_buf_set_option(buf, "breakindent", true)
   -- Set unique buffer name for identification
   vim.api.nvim_buf_set_name(buf, string.format("codereview://input/%d", buf))
 
@@ -63,6 +67,10 @@ function M.show_comment_input(callback, context)
     title = conf.title,
     title_pos = conf.title_pos,
   })
+
+  -- Ensure wrap options are set for the window
+  vim.api.nvim_win_set_option(win, "wrap", true)
+  vim.api.nvim_win_set_option(win, "linebreak", true)
 
   -- Setup keymaps
   local function close_with_text()
