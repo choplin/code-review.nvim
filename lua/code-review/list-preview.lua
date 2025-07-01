@@ -20,11 +20,11 @@ function M.telescope_comment_previewer()
 
       -- Make buffer modifiable before setting content
       vim.api.nvim_buf_set_option(bufnr, "modifiable", true)
-      
+
       -- Set buffer content
       vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
       vim.api.nvim_buf_set_option(bufnr, "filetype", "markdown")
-      
+
       -- Make it read-only after setting content
       vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
     end,

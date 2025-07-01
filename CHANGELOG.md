@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Comment list functionality with `<leader>rl` keymap and `:CodeReviewList` command
+- Visual indicators (signs and virtual text) for commented lines
 
 ### Fixed
 - Return to normal mode after submitting comment from insert mode

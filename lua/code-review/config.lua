@@ -27,6 +27,20 @@ local defaults = {
         title_pos = "center",
       },
     },
+    -- Sign column indicators
+    signs = {
+      enabled = true,
+      text = "┃",
+      texthl = "CodeReviewSign",
+      linehl = "",
+      numhl = "",
+    },
+    -- Virtual text indicators
+    virtual_text = {
+      enabled = true,
+      prefix = " 󰆉 ",
+      hl = "CodeReviewVirtualText",
+    },
   },
   -- Output settings
   output = {

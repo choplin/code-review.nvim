@@ -94,6 +94,16 @@ function M.setup(opts)
       end
     end
   end
+
+  -- Setup autocmd to show indicators when entering a buffer
+  vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost" }, {
+    group = vim.api.nvim_create_augroup("CodeReviewIndicators", { clear = true }),
+    callback = function()
+      -- Update indicators for current buffer
+      require("code-review.comment").update_indicators()
+    end,
+    desc = "Update code review indicators",
+  })
 end
 
 --- Clear all comments

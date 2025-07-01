@@ -137,17 +137,26 @@ add_virtual_text = function(bufnr, comments)
   for _, comment in ipairs(comments) do
     -- Only show on first line of range
     local line = comment.line_start
-    comments_by_line[line] = comments_by_line[line] or 0
-    comments_by_line[line] = comments_by_line[line] + 1
+    if not comments_by_line[line] then
+      comments_by_line[line] = {}
+    end
+    table.insert(comments_by_line[line], comment)
   end
 
   -- Add virtual text
-  for line, count in pairs(comments_by_line) do
+  for line, line_comments in pairs(comments_by_line) do
     local text = config.prefix
-    if count > 1 then
-      text = text .. string.format("(%d comments)", count)
+    if #line_comments > 1 then
+      -- Multiple comments on same line
+      text = text .. string.format("(%d comments)", #line_comments)
     else
-      text = text .. "Comment"
+      -- Single comment - show first line of comment
+      local first_line = line_comments[1].comment:match("^[^\n]*") or line_comments[1].comment
+      -- Truncate if too long
+      if #first_line > 40 then
+        first_line = first_line:sub(1, 37) .. "..."
+      end
+      text = text .. first_line
     end
 
     vim.api.nvim_buf_set_extmark(bufnr, ns_id, line - 1, 0, {
