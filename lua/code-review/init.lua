@@ -45,6 +45,10 @@ function M.setup(opts)
     M.show_comment_at_cursor()
   end, { desc = "Show comment at cursor position" })
 
+  vim.api.nvim_create_user_command("CodeReviewList", function()
+    M.list_comments()
+  end, { desc = "List all comments" })
+
   -- Setup keymaps if enabled
   local keymaps = config.get("keymaps")
   if keymaps then
@@ -59,7 +63,7 @@ function M.setup(opts)
           key = mapping.key
           mode = mapping.mode or (action == "add_comment" and { "n", "v" } or "n")
         end
-        
+
         if key then
           local desc = {
             clear = "Clear review comments",
@@ -68,8 +72,9 @@ function M.setup(opts)
             save = "Save review to file",
             copy = "Copy review to clipboard",
             show_comment = "Show comment at cursor",
+            list_comments = "List all comments",
           }
-          
+
           local func = {
             clear = M.clear,
             add_comment = function()
@@ -79,8 +84,9 @@ function M.setup(opts)
             save = M.save,
             copy = M.copy,
             show_comment = M.show_comment_at_cursor,
+            list_comments = M.list_comments,
           }
-          
+
           if func[action] then
             vim.keymap.set(mode, key, func[action], { desc = desc[action] })
           end
@@ -119,7 +125,7 @@ function M.preview()
   else
     format = preview_format
   end
-  
+
   local content = formatter.format(comments, format)
   ui.show_preview(content, format)
 end
@@ -202,6 +208,11 @@ function M.show_comment_at_cursor()
 
   -- Show comments in floating window
   ui.show_comment_list(line_comments)
+end
+
+--- List all comments
+function M.list_comments()
+  require("code-review.list").list_comments()
 end
 
 --- Get input buffer functions for keymapping

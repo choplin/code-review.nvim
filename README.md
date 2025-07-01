@@ -1,7 +1,6 @@
 # 📝 code-review.nvim
 
 [![Neovim](https://img.shields.io/badge/Neovim-0.10+-green.svg?style=flat-square&logo=neovim)](https://neovim.io)
-[![Lua](https://img.shields.io/badge/Lua-5.1+-blue.svg?style=flat-square&logo=lua)](https://www.lua.org)
 [![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 [![GitHub release](https://img.shields.io/github/v/release/choplin/code-review.nvim?style=flat-square)](https://github.com/choplin/code-review.nvim/releases)
 
@@ -18,6 +17,7 @@ Add comments to any line or code block, export as structured Markdown, and paste
 - 🤖 **AI-ready export** - Share reviews with Claude, ChatGPT in one copy
 - 👁️ **Smart navigation** - Jump between comments, view at cursor
 - ✏️ **Live preview** - See and edit all your comments in one place
+- 🔍 **Find comments** - List all with `<leader>rl` using Telescope, fzf, or quickfix
 
 ## 📦 Installation
 
@@ -102,7 +102,7 @@ require('code-review').setup({
     add_comment = '<leader>rc',
     preview = '<leader>rp',
     save = '<leader>rw',
-    copy = '<leader>ry',
+copy = '<leader>ry',
     show_comment = '<leader>rs',
   },
 })
@@ -217,6 +217,9 @@ end
 " Show comments at cursor position
 :CodeReviewShowComment
 
+" List all comments (opens picker or quickfix)
+:CodeReviewList
+
 " Preview and edit
 :CodeReviewPreview
 " Make edits in the preview buffer
@@ -266,7 +269,7 @@ The comment viewer will:
 
 ### Markdown Format
 
-```markdown
+````markdown
 # Code Review
 
 **Date**: 2024-01-30 14:30:00
@@ -277,27 +280,27 @@ The comment viewer will:
 ### Line 42
 
 **Time**: 2024-01-30 14:30:00
-```
 
+```lua
 42: local function process_data(input)
-
 ```
+
 This function needs error handling for nil input.
 
 ### Lines 100-105
+
 **Time**: 2024-01-30 14:30:15
 
-```
-
+```lua
 100: for i, item in ipairs(items) do
-101: if item.valid then
-102: table.insert(results, item)
-103: end
+101:   if item.valid then
+102:     table.insert(results, item)
+103:   end
 104: end
+```
 
-```
 Consider using table.filter for better readability.
-```
+````
 
 ### JSON Format
 
@@ -325,6 +328,7 @@ Consider using table.filter for better readability.
 | ---------------------------- | ----------------------------------------------------------- |
 | `:CodeReviewComment [lines]` | Add comment at cursor/selection with optional context lines |
 | `:CodeReviewShowComment`     | Show comments at cursor position                            |
+| `:CodeReviewList`            | List all comments (picker or quickfix)                      |
 | `:CodeReviewPreview`         | Open preview window with editable content                   |
 | `:CodeReviewSave [path]`     | Save review to file                                         |
 | `:CodeReviewCopy`            | Copy review to clipboard                                    |

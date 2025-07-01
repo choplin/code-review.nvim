@@ -67,6 +67,11 @@ local defaults = {
       mode = "n",
       key = "<leader>rs",
     },
+    -- List all comments
+    list_comments = {
+      mode = "n",
+      key = "<leader>rl",
+    },
   },
   -- Integration settings
   integrations = {

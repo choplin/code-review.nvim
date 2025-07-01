@@ -45,7 +45,7 @@ local function format_markdown(comments)
       else
         table.insert(lines, string.format("### Lines %d-%d", comment.line_start, comment.line_end))
       end
-      
+
       -- Add timestamp
       table.insert(lines, string.format("**Time**: %s", os.date(date_format, comment.timestamp)))
       table.insert(lines, "")
