@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-07-01
+
 ### Added
 - Comment list functionality with `<leader>rl` keymap and `:CodeReviewList` command
 - Visual indicators (signs and virtual text) for commented lines
