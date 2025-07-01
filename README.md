@@ -308,6 +308,15 @@ The `:CodeReviewList` command (`<leader>rl`) automatically selects the best avai
    - `:cn`/`:cp` to navigate
    - `<Enter>` to jump to comment location
 
+### Side-by-side Review with diffview.nvim
+
+<img src="assets/screenshot/diffview.png" alt="Code review with diffview.nvim" />
+
+Perfect for PR reviews! Use code-review.nvim alongside [diffview.nvim](https://github.com/sindrets/diffview.nvim) to:
+- Review diffs in split view
+- Add comments while comparing changes
+- See context from both old and new versions
+
 ## 📄 Output Formats
 
 ### Markdown Format
