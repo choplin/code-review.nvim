@@ -276,8 +276,8 @@ function M.delete_comment_at_cursor()
     end)
   else
     -- Single comment, confirm deletion
-    local comment = line_comments[1]
-    local first_line = comment.comment:match("^[^\n]*") or comment.comment
+    local comment_data = line_comments[1]
+    local first_line = comment_data.comment:match("^[^\n]*") or comment_data.comment
     if #first_line > 50 then
       first_line = first_line:sub(1, 47) .. "..."
     end
@@ -286,7 +286,7 @@ function M.delete_comment_at_cursor()
       prompt = string.format("Delete comment: %s?", first_line),
     }, function(choice)
       if choice == "Yes" then
-        state.delete_comment(comment.id)
+        state.delete_comment(comment_data.id)
         require("code-review.comment").update_indicators()
         vim.notify("Comment deleted")
       end
