@@ -293,12 +293,12 @@ The preview buffer is fully editable. You can:
 
 The `:CodeReviewList` command (`<leader>rl`) automatically selects the best available picker:
 
-1. **Telescope** (if installed)
+1. **[Telescope](https://github.com/nvim-telescope/telescope.nvim)** (if installed)
    - Fuzzy search through comments
    - Live preview with syntax highlighting
    - Navigate with `j`/`k`, select with `<Enter>`
 
-2. **fzf-lua** (if installed)
+2. **[fzf-lua](https://github.com/ibhagwan/fzf-lua)** (if installed)
    - Fast fuzzy search
    - Full comment preview with Markdown highlighting
    - Navigate with `Ctrl-j`/`Ctrl-k`, select with `<Enter>`
