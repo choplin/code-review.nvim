@@ -24,11 +24,11 @@ Add comments to any line or code block, export as structured Markdown, and paste
   <tr>
     <td width="50%">
       <img src="assets/screenshot/3_copy_to_clipboard.png" alt="Copy to Clipboard" />
-      <p align="center"><b>3. Copy with one command</b></p>
+      <p align="center"><b>3. Copy all comments with one command</b></p>
     </td>
     <td width="50%">
       <img src="assets/screenshot/4_ai_understands_all.png" alt="AI Understands" />
-      <p align="center"><b>4. AI understands everything</b></p>
+      <p align="center"><b>4. Just paste - AI understands everything</b></p>
     </td>
   </tr>
 </table>
