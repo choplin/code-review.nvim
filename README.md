@@ -139,6 +139,8 @@ require('code-review').setup({
     save = '<leader>rw',
 copy = '<leader>ry',
     show_comment = '<leader>rs',
+    list_comments = '<leader>rl',
+    delete_comment = '<leader>rd',
   },
 })
 ```
@@ -251,6 +253,7 @@ end
 | `:CodeReviewSave [path]` | `<leader>rw` | Save review to file |
 | `:CodeReviewCopy` | `<leader>ry` | Copy review to clipboard |
 | `:CodeReviewClear` | `<leader>rx` | Clear all review comments |
+| `:CodeReviewDeleteComment` | `<leader>rd` | Delete comment at cursor position |
 
 ### Visual Indicators
 
@@ -270,6 +273,7 @@ end
 | `require('code-review').save(path)` | Save to file |
 | `require('code-review').copy()` | Copy to clipboard |
 | `require('code-review').clear()` | Clear all comments |
+| `require('code-review').delete_comment_at_cursor()` | Delete comment at cursor |
 
 ### Visual Mode Selection
 

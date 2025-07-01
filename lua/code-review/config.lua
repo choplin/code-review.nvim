@@ -86,6 +86,11 @@ local defaults = {
       mode = "n",
       key = "<leader>rl",
     },
+    -- Delete comment at cursor
+    delete_comment = {
+      mode = "n",
+      key = "<leader>rd",
+    },
   },
   -- Integration settings
   integrations = {

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Delete comment at cursor position with `<leader>rd` keymap and `:CodeReviewDeleteComment` command
+
 ## [0.2.0] - 2025-07-01
 
 ### Added
