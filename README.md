@@ -68,17 +68,17 @@ use {
 
 ## 🚀 Quick Start
 
-1. Add comments (session starts automatically):
-   - At cursor: `:CodeReviewComment` or `<leader>rc`
-   - With context: `:CodeReviewComment 3` or `3<leader>rc` (includes 3 lines before/after)
-   - Visual selection: Select lines and press `<leader>rc`
-   - Submit comment: `<C-CR>` (both insert and normal mode)
-2. View comments at cursor: `:CodeReviewShowComment` or `<leader>rs`
-3. Preview your review: `:CodeReviewPreview` or `<leader>rp`
-4. Save or copy:
-   - Save to file: `:CodeReviewSave [path]` or `<leader>rw`
-   - Copy to clipboard: `:CodeReviewCopy` or `<leader>ry`
-5. Clear all comments: `:CodeReviewClear` or `<leader>rx`
+1. **Add a comment**: `<leader>rc` on any line or visual selection
+   - Write your feedback in Markdown
+   - Press `<C-CR>` to submit
+
+2. **Preview all comments**: `<leader>rp` to see your complete review
+
+3. **Copy to clipboard**: `<leader>ry` to copy everything
+
+4. **Paste to AI**: Just paste in Claude, ChatGPT, or any AI assistant
+
+That's it! Your AI will understand all your feedback perfectly.
 
 ## 🛠️ Configuration
 
@@ -238,35 +238,38 @@ end
 
 </details>
 
-## 📝 Usage Examples
+## 📝 All Features
 
-### Basic Review Workflow
+### Available Commands
 
-```vim
-" Add comment to current line (session starts automatically)
-:CodeReviewComment
+| Command | Default Keymap | Description |
+| --- | --- | --- |
+| `:CodeReviewComment [lines]` | `<leader>rc` | Add comment at cursor/selection with optional context lines |
+| `:CodeReviewShowComment` | `<leader>rs` | Show comments at cursor position |
+| `:CodeReviewList` | `<leader>rl` | List all comments (Telescope/fzf-lua/quickfix) |
+| `:CodeReviewPreview` | `<leader>rp` | Open preview window with editable content |
+| `:CodeReviewSave [path]` | `<leader>rw` | Save review to file |
+| `:CodeReviewCopy` | `<leader>ry` | Copy review to clipboard |
+| `:CodeReviewClear` | `<leader>rx` | Clear all review comments |
 
-" Add comment with 5 lines of context
-:CodeReviewComment 5
+### Visual Indicators
 
-" Show comments at cursor position
-:CodeReviewShowComment
+| Feature | Default | Description |
+| --- | --- | --- |
+| Sign column | `┃` | Shows on all commented lines |
+| Virtual text | `󰆉 Comment text...` | Shows first line of comment |
 
-" List all comments (opens picker or quickfix)
-:CodeReviewList
+### Lua API
 
-" Preview and edit
-:CodeReviewPreview
-" Make edits in the preview buffer
-:w  " Save changes back to review
-
-" Export
-:CodeReviewSave ~/reviews/myreview.md
-:CodeReviewCopy
-
-" Clear all comments
-:CodeReviewClear
-```
+| Function | Description |
+| --- | --- |
+| `require('code-review').add_comment(lines)` | Add comment with optional context lines |
+| `require('code-review').show_comment_at_cursor()` | Show comments at cursor |
+| `require('code-review').list_comments()` | List all comments |
+| `require('code-review').preview()` | Open preview window |
+| `require('code-review').save(path)` | Save to file |
+| `require('code-review').copy()` | Copy to clipboard |
+| `require('code-review').clear()` | Clear all comments |
 
 ### Visual Mode Selection
 
@@ -284,21 +287,26 @@ The preview buffer is fully editable. You can:
 - Save with `:w` to update the review
 - Close with `q`
 
-### Viewing Comments
+### Comment List Picker
 
-When working on a file with existing comments:
+<img src="assets/screenshot/picker.png" alt="Comment List Picker" />
 
-```vim
-" Show comments at current cursor position
-:CodeReviewShowComment
-" or press <leader>rs
-```
+The `:CodeReviewList` command (`<leader>rl`) automatically selects the best available picker:
 
-The comment viewer will:
+1. **Telescope** (if installed)
+   - Fuzzy search through comments
+   - Live preview with syntax highlighting
+   - Navigate with `j`/`k`, select with `<Enter>`
 
-- Display all comments that include the current line
-- Show in a floating window near the cursor
-- Close with `q` or `<Esc>`
+2. **fzf-lua** (if installed)
+   - Fast fuzzy search
+   - Full comment preview with Markdown highlighting
+   - Navigate with `Ctrl-j`/`Ctrl-k`, select with `<Enter>`
+
+3. **Quickfix** (fallback)
+   - Native Vim list
+   - `:cn`/`:cp` to navigate
+   - `<Enter>` to jump to comment location
 
 ## 📄 Output Formats
 
@@ -357,17 +365,6 @@ Consider using table.filter for better readability.
 }
 ```
 
-## 🔧 Commands
-
-| Command                      | Description                                                 |
-| ---------------------------- | ----------------------------------------------------------- |
-| `:CodeReviewComment [lines]` | Add comment at cursor/selection with optional context lines |
-| `:CodeReviewShowComment`     | Show comments at cursor position                            |
-| `:CodeReviewList`            | List all comments (picker or quickfix)                      |
-| `:CodeReviewPreview`         | Open preview window with editable content                   |
-| `:CodeReviewSave [path]`     | Save review to file                                         |
-| `:CodeReviewCopy`            | Copy review to clipboard                                    |
-| `:CodeReviewClear`           | Clear all review comments                                   |
 
 ## 🔨 Development
 
