@@ -4,6 +4,10 @@ local state = require("code-review.state")
 local utils = require("code-review.utils")
 local ui = require("code-review.ui")
 
+-- Create namespaces once at module load
+local ns_virtual_text = vim.api.nvim_create_namespace("CodeReviewVirtualText")
+local ns_context = vim.api.nvim_create_namespace("code_review_context")
+
 --- Add a comment at the current location
 ---@param context_lines number? Number of context lines
 function M.add(context_lines)
@@ -11,21 +15,20 @@ function M.add(context_lines)
   local context = utils.get_selection_context(context_lines)
 
   -- Create namespace for highlighting
-  local ns_id = vim.api.nvim_create_namespace("code_review_context")
   local bufnr = vim.api.nvim_get_current_buf()
 
   -- Clear previous highlights
-  vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
+  vim.api.nvim_buf_clear_namespace(bufnr, ns_context, 0, -1)
 
   -- Highlight the context range (always highlight at least the current line/selection)
   for line = context.line_start - 1, context.line_end - 1 do
-    vim.api.nvim_buf_add_highlight(bufnr, ns_id, "Visual", line, 0, -1)
+    vim.api.nvim_buf_add_highlight(bufnr, ns_context, "Visual", line, 0, -1)
   end
 
   -- Show input UI and get comment text
   ui.show_comment_input(function(comment_text)
     -- Clear highlights when done
-    vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
+    vim.api.nvim_buf_clear_namespace(bufnr, ns_context, 0, -1)
 
     if not comment_text or comment_text == "" then
       return
@@ -92,13 +95,22 @@ end
 
 --- Clear all indicators
 function M.clear_indicators()
-  -- Clear signs
-  vim.fn.sign_unplace("CodeReviewSigns")
+  -- Clear signs from all buffers
+  -- Using pcall to handle different Neovim versions
+  local ok, _ = pcall(vim.fn.sign_unplace, "CodeReviewSigns", {})
+  if not ok then
+    -- Fallback: clear signs buffer by buffer
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+      if vim.api.nvim_buf_is_valid(buf) then
+        pcall(vim.fn.sign_unplace, "CodeReviewSigns", { buffer = buf })
+      end
+    end
+  end
 
   -- Clear virtual text
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
     if vim.api.nvim_buf_is_valid(buf) then
-      vim.api.nvim_buf_clear_namespace(buf, vim.api.nvim_create_namespace("CodeReviewVirtualText"), 0, -1)
+      vim.api.nvim_buf_clear_namespace(buf, ns_virtual_text, 0, -1)
     end
   end
 end
@@ -130,7 +142,6 @@ end
 ---@param comments table[]
 add_virtual_text = function(bufnr, comments)
   local config = require("code-review.config").get("ui.virtual_text")
-  local ns_id = vim.api.nvim_create_namespace("CodeReviewVirtualText")
 
   -- Group comments by line for virtual text
   local comments_by_line = {}
@@ -159,7 +170,7 @@ add_virtual_text = function(bufnr, comments)
       text = text .. first_line
     end
 
-    vim.api.nvim_buf_set_extmark(bufnr, ns_id, line - 1, 0, {
+    vim.api.nvim_buf_set_extmark(bufnr, ns_virtual_text, line - 1, 0, {
       virt_text = { { text, config.hl } },
       virt_text_pos = "eol",
     })

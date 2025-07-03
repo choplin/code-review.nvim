@@ -115,6 +115,7 @@ end
 --- Clear all comments
 function M.clear()
   state.clear()
+  comment.update_indicators()
 end
 
 --- Add a comment at the current location
