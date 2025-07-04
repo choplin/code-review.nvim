@@ -20,9 +20,12 @@ jobs:
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          
+          # Remove 'v' prefix for CHANGELOG lookup
+          CHANGELOG_VERSION=${VERSION#v}
 
           # Extract release notes from CHANGELOG.md
-          awk -v version="$VERSION" '
+          awk -v version="$CHANGELOG_VERSION" '
             /^## \[/ {
               if (found) exit
               if ($2 == "[" version "]") {
