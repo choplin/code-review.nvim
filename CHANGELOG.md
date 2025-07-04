@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Delete comment at cursor position with `<leader>rd` keymap and `:CodeReviewDeleteComment` command
 - Auto-copy formatted comment to clipboard when adding new comments with `comment.auto_copy_on_add` option
+- Word wrap support for comment input popup
+
+### Fixed
+- Virtual text and signs properly cleared when deleting comments
 
 ## [0.2.0] - 2025-07-01
 
