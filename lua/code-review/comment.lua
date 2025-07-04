@@ -49,6 +49,15 @@ function M.add(context_lines)
     -- Show visual indicator if enabled
     M.update_indicators()
 
+    -- Copy to clipboard if enabled
+    local config = require("code-review.config")
+    if config.get("comment.auto_copy_on_add") then
+      -- Format the comment with full context (like <leader>rs shows)
+      local formatted_lines = M.format_as_markdown(comment_data, true, false)
+      local formatted_text = table.concat(formatted_lines, "\n")
+      utils.copy_to_clipboard(formatted_text)
+    end
+
     vim.notify(
       string.format(
         "Comment added to %s:%d%s",

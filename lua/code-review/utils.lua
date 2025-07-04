@@ -115,4 +115,17 @@ function M.generate_filename(format)
   return string.format("code-review-%s.%s", timestamp, ext)
 end
 
+--- Copy text to clipboard
+---@param text string
+---@return boolean success
+function M.copy_to_clipboard(text)
+  local ok, result = pcall(vim.fn.setreg, "+", text)
+  if ok then
+    return true
+  else
+    vim.notify("Failed to copy to clipboard: " .. tostring(result), vim.log.levels.ERROR)
+    return false
+  end
+end
+
 return M

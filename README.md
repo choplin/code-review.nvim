@@ -69,6 +69,7 @@ use {
 ## 🚀 Quick Start
 
 1. **Add a comment**: `<leader>rc` on any line or visual selection
+
    - Write your feedback in Markdown
    - Press `<C-CR>` to submit
 
@@ -130,6 +131,10 @@ require('code-review').setup({
     format = 'markdown', -- 'markdown' or 'json'
     date_format = '%Y-%m-%d %H:%M:%S',
     save_dir = nil, -- nil = current directory
+  },
+  -- Comment settings
+  comment = {
+    auto_copy_on_add = false, -- Automatically copy each new comment to clipboard when added
   },
   -- Keymaps (set to false to disable all keymaps)
   keymaps = {
@@ -244,36 +249,36 @@ end
 
 ### Available Commands
 
-| Command | Default Keymap | Description |
-| --- | --- | --- |
-| `:CodeReviewComment [lines]` | `<leader>rc` | Add comment at cursor/selection with optional context lines |
-| `:CodeReviewShowComment` | `<leader>rs` | Show comments at cursor position |
-| `:CodeReviewList` | `<leader>rl` | List all comments (Telescope/fzf-lua/quickfix) |
-| `:CodeReviewPreview` | `<leader>rp` | Open preview window with editable content |
-| `:CodeReviewSave [path]` | `<leader>rw` | Save review to file |
-| `:CodeReviewCopy` | `<leader>ry` | Copy review to clipboard |
-| `:CodeReviewClear` | `<leader>rx` | Clear all review comments |
-| `:CodeReviewDeleteComment` | `<leader>rd` | Delete comment at cursor position |
+| Command                      | Default Keymap | Description                                                 |
+| ---------------------------- | -------------- | ----------------------------------------------------------- |
+| `:CodeReviewComment [lines]` | `<leader>rc`   | Add comment at cursor/selection with optional context lines |
+| `:CodeReviewShowComment`     | `<leader>rs`   | Show comments at cursor position                            |
+| `:CodeReviewList`            | `<leader>rl`   | List all comments (Telescope/fzf-lua/quickfix)              |
+| `:CodeReviewPreview`         | `<leader>rp`   | Open preview window with editable content                   |
+| `:CodeReviewSave [path]`     | `<leader>rw`   | Save review to file                                         |
+| `:CodeReviewCopy`            | `<leader>ry`   | Copy review to clipboard                                    |
+| `:CodeReviewClear`           | `<leader>rx`   | Clear all review comments                                   |
+| `:CodeReviewDeleteComment`   | `<leader>rd`   | Delete comment at cursor position                           |
 
 ### Visual Indicators
 
-| Feature | Default | Description |
-| --- | --- | --- |
-| Sign column | `┃` | Shows on all commented lines |
-| Virtual text | `󰆉 Comment text...` | Shows first line of comment |
+| Feature      | Default             | Description                  |
+| ------------ | ------------------- | ---------------------------- |
+| Sign column  | `┃`                 | Shows on all commented lines |
+| Virtual text | `󰆉 Comment text...` | Shows first line of comment  |
 
 ### Lua API
 
-| Function | Description |
-| --- | --- |
-| `require('code-review').add_comment(lines)` | Add comment with optional context lines |
-| `require('code-review').show_comment_at_cursor()` | Show comments at cursor |
-| `require('code-review').list_comments()` | List all comments |
-| `require('code-review').preview()` | Open preview window |
-| `require('code-review').save(path)` | Save to file |
-| `require('code-review').copy()` | Copy to clipboard |
-| `require('code-review').clear()` | Clear all comments |
-| `require('code-review').delete_comment_at_cursor()` | Delete comment at cursor |
+| Function                                            | Description                             |
+| --------------------------------------------------- | --------------------------------------- |
+| `require('code-review').add_comment(lines)`         | Add comment with optional context lines |
+| `require('code-review').show_comment_at_cursor()`   | Show comments at cursor                 |
+| `require('code-review').list_comments()`            | List all comments                       |
+| `require('code-review').preview()`                  | Open preview window                     |
+| `require('code-review').save(path)`                 | Save to file                            |
+| `require('code-review').copy()`                     | Copy to clipboard                       |
+| `require('code-review').clear()`                    | Clear all comments                      |
+| `require('code-review').delete_comment_at_cursor()` | Delete comment at cursor                |
 
 ### Visual Mode Selection
 
@@ -298,11 +303,13 @@ The preview buffer is fully editable. You can:
 The `:CodeReviewList` command (`<leader>rl`) automatically selects the best available picker:
 
 1. **[Telescope](https://github.com/nvim-telescope/telescope.nvim)** (if installed)
+
    - Fuzzy search through comments
    - Live preview with syntax highlighting
    - Navigate with `j`/`k`, select with `<Enter>`
 
 2. **[fzf-lua](https://github.com/ibhagwan/fzf-lua)** (if installed)
+
    - Fast fuzzy search
    - Full comment preview with Markdown highlighting
    - Navigate with `Ctrl-j`/`Ctrl-k`, select with `<Enter>`
@@ -317,6 +324,7 @@ The `:CodeReviewList` command (`<leader>rl`) automatically selects the best avai
 <img src="assets/screenshot/diffview.png" alt="Code review with diffview.nvim" />
 
 Perfect for PR reviews! Use code-review.nvim alongside [diffview.nvim](https://github.com/sindrets/diffview.nvim) to:
+
 - Review diffs in split view
 - Add comments while comparing changes
 - See context from both old and new versions
@@ -377,7 +385,6 @@ Consider using table.filter for better readability.
   ]
 }
 ```
-
 
 ## 🔨 Development
 

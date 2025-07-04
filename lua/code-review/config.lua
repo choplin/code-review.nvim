@@ -49,6 +49,11 @@ local defaults = {
     -- Default save directory (nil means current directory)
     save_dir = nil,
   },
+  -- Comment settings
+  comment = {
+    -- Automatically copy each new comment to clipboard when added
+    auto_copy_on_add = false,
+  },
   -- Keymaps (set to false to disable all keymaps)
   keymaps = {
     -- Clear all comments
