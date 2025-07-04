@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract release notes
+        id: extract_notes
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+          # Extract release notes from CHANGELOG.md
+          awk -v version="$VERSION" '
+            /^## \[/ {
+              if (found) exit
+              if ($2 == "[" version "]") {
+                found = 1
+                next
+              }
+            }
+            found && /^## \[/ {
+              exit
+            }
+            found {
+              print
+            }
+          ' CHANGELOG.md > release_notes.md
+
+          # Remove empty lines at the beginning
+          sed -i '/./,$!d' release_notes.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ steps.extract_notes.outputs.VERSION }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
