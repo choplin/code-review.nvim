@@ -134,6 +134,17 @@ require('code-review').setup({
   },
   -- Comment settings
   comment = {
+    -- Storage configuration
+    storage = {
+      backend = 'memory', -- 'memory' or 'file'
+      memory = {}, -- No memory-specific settings yet
+      file = {
+        -- Directory for file storage
+        -- Relative paths: resolved from project root (git root or cwd)
+        -- Absolute paths: used as-is
+        dir = '.code-review',
+      },
+    },
     auto_copy_on_add = false, -- Automatically copy each new comment to clipboard when added
   },
   -- Keymaps (set to false to disable all keymaps)
@@ -385,6 +396,68 @@ Consider using table.filter for better readability.
   ]
 }
 ```
+
+## 💾 Storage Backends
+
+code-review.nvim supports two storage backends:
+
+### Memory Storage (Default)
+
+Comments are stored in memory during your Neovim session. This is the default behavior.
+
+```lua
+require('code-review').setup({
+  comment = {
+    storage = {
+      backend = "memory",  -- Default
+    },
+  },
+})
+```
+
+### File Storage
+
+Comments are stored as individual files on disk, perfect for:
+- Persistent reviews across sessions
+- Real-time monitoring by external tools
+- Integration with AI assistants
+
+```lua
+require('code-review').setup({
+  comment = {
+    storage = {
+      backend = "file",
+      file = {
+        dir = ".code-review",    -- Default: project root/.code-review/
+        -- dir = ".reviews",     -- Alternative: project root/.reviews/
+        -- dir = "~/reviews",    -- Absolute path: ~/reviews/
+      },
+    },
+  },
+})
+```
+
+#### How File Storage Works
+
+1. Each comment is saved as a separate file: `YYYY-MM-DD-HHMMSS-NNN.md`
+2. Files are saved to:
+   - Relative paths: Resolved from project root (git root if available, otherwise cwd)
+   - Absolute paths: Used as-is
+   - Default: `{project_root}/.code-review/`
+3. Comments persist across Neovim sessions
+4. External tools can monitor the directory for new files
+
+#### AI Integration Example
+
+```bash
+# Start Claude Code monitoring the review directory
+claude-code --watch .code-review/
+
+# Or for git root storage
+claude-code --watch .
+```
+
+As you add comments in Neovim, Claude Code will automatically process each new file.
 
 ## 🔨 Development
 

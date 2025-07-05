@@ -128,4 +128,67 @@ function M.copy_to_clipboard(text)
   end
 end
 
+--- Get the storage directory
+---@param dir string Directory path from config
+---@return string directory path
+function M.get_storage_dir(dir)
+  -- Expand ~ and environment variables
+  local expanded_dir = vim.fn.expand(dir)
+
+  -- Check if it's an absolute path
+  if vim.fn.isdirectory(expanded_dir) == 1 or expanded_dir:match("^/") or expanded_dir:match("^~") then
+    -- Absolute path, use as-is
+    return expanded_dir
+  else
+    -- Relative path, resolve from project root
+    local project_root = M.get_project_root()
+    return project_root .. "/" .. dir
+  end
+end
+
+--- Get project root (git root or cwd)
+---@return string
+function M.get_project_root()
+  -- Try to find git root
+  local git_root = vim.fn.finddir(".git", vim.fn.getcwd() .. ";")
+  if git_root ~= "" then
+    return vim.fn.fnamemodify(git_root, ":h")
+  end
+
+  -- Fallback to current directory
+  return vim.fn.getcwd()
+end
+
+--- Generate a unique filename for auto-save
+---@return string filename
+function M.generate_auto_save_filename()
+  local timestamp = os.date("%Y-%m-%d-%H%M%S")
+  local ms = vim.fn.reltimefloat(vim.fn.reltime()) * 1000
+  local seq = string.format("%03d", ms % 1000)
+  return string.format("%s-%s.md", timestamp, seq)
+end
+
+--- Save text to a file
+---@param filepath string
+---@param content string
+---@return boolean success
+function M.save_to_file(filepath, content)
+  -- Create directory if it doesn't exist
+  local dir = vim.fn.fnamemodify(filepath, ":h")
+  if vim.fn.isdirectory(dir) == 0 then
+    vim.fn.mkdir(dir, "p")
+  end
+
+  -- Write content to file
+  local file = io.open(filepath, "w")
+  if not file then
+    vim.notify("Failed to open file: " .. filepath, vim.log.levels.ERROR)
+    return false
+  end
+
+  file:write(content)
+  file:close()
+  return true
+end
+
 return M

@@ -51,6 +51,22 @@ local defaults = {
   },
   -- Comment settings
   comment = {
+    -- Storage configuration
+    storage = {
+      -- Backend type: "memory" or "file"
+      backend = "memory",
+      -- Memory storage settings
+      memory = {
+        -- No settings for memory storage yet
+      },
+      -- File storage settings
+      file = {
+        -- Directory for file storage
+        -- Relative paths: resolved from project root (git root or cwd)
+        -- Absolute paths: used as-is
+        dir = ".code-review",
+      },
+    },
     -- Automatically copy each new comment to clipboard when added
     auto_copy_on_add = false,
   },

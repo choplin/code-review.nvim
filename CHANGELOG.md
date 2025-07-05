@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- File-based storage backend option with nested configuration structure
+- Storage directory configuration supports both relative and absolute paths
+
 ## [0.3.0] - 2025-07-04
 
 ### Added

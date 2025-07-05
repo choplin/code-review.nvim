@@ -202,22 +202,13 @@ end
 --- Show comment at cursor position
 function M.show_comment_at_cursor()
   state.ensure_active()
-  local comments = state.get_comments()
-  if #comments == 0 then
-    return
-  end
 
   local bufnr = vim.api.nvim_get_current_buf()
   local file = utils.normalize_path(vim.api.nvim_buf_get_name(bufnr))
   local row = vim.api.nvim_win_get_cursor(0)[1]
 
   -- Find comments for current line
-  local line_comments = {}
-  for _, comment_data in ipairs(comments) do
-    if comment_data.file == file and row >= comment_data.line_start and row <= comment_data.line_end then
-      table.insert(line_comments, comment_data)
-    end
-  end
+  local line_comments = state.get_comments_at_location(file, row)
 
   if #line_comments == 0 then
     return
@@ -235,22 +226,13 @@ end
 --- Delete comment at cursor position
 function M.delete_comment_at_cursor()
   state.ensure_active()
-  local comments = state.get_comments()
-  if #comments == 0 then
-    return
-  end
 
   local bufnr = vim.api.nvim_get_current_buf()
   local file = utils.normalize_path(vim.api.nvim_buf_get_name(bufnr))
   local row = vim.api.nvim_win_get_cursor(0)[1]
 
   -- Find comments for current line
-  local line_comments = {}
-  for _, comment_data in ipairs(comments) do
-    if comment_data.file == file and row >= comment_data.line_start and row <= comment_data.line_end then
-      table.insert(line_comments, comment_data)
-    end
-  end
+  local line_comments = state.get_comments_at_location(file, row)
 
   if #line_comments == 0 then
     vim.notify("No comment at cursor position", vim.log.levels.WARN)
