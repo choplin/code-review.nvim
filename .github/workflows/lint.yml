@@ -33,3 +33,20 @@ jobs:
       - name: Run luacheck
         run: luacheck .
 
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Neovim
+        run: |
+          wget https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz
+          tar xzf nvim-linux64.tar.gz
+          echo "$PWD/nvim-linux64/bin" >> $GITHUB_PATH
+
+      - name: Clone mini.nvim
+        run: |
+          git clone --depth 1 https://github.com/echasnovski/mini.nvim deps/mini.nvim
+
+      - name: Run tests
+        run: make test

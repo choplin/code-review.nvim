@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - File-based storage backend option for persistent comment storage
+- Test framework using mini.test
+- GitHub Actions CI job for running tests
 
 ### Removed
 - JSON output format support - all outputs are now in Markdown format only
