@@ -101,7 +101,6 @@ require('code-review').setup({
     },
     -- Preview window
     preview = {
-      format = 'markdown', -- 'markdown', 'json', or 'auto' (same as output.format)
       split = 'vertical', -- 'vertical', 'horizontal', or 'float'
       vertical_width = 80,
       horizontal_height = 20,
@@ -128,7 +127,6 @@ require('code-review').setup({
   },
   -- Output settings
   output = {
-    format = 'markdown', -- 'markdown' or 'json'
     date_format = '%Y-%m-%d %H:%M:%S',
     save_dir = nil, -- nil = current directory
   },
@@ -340,9 +338,9 @@ Perfect for PR reviews! Use code-review.nvim alongside [diffview.nvim](https://g
 - Add comments while comparing changes
 - See context from both old and new versions
 
-## 📄 Output Formats
+## 📄 Output Format
 
-### Markdown Format
+Reviews are saved in a clean, readable Markdown format:
 
 ````markdown
 # Code Review
@@ -377,25 +375,6 @@ This function needs error handling for nil input.
 Consider using table.filter for better readability.
 ````
 
-### JSON Format
-
-```json
-{
-  "date": "2024-01-30 14:30:00",
-  "comment_count": 2,
-  "comments": [
-    {
-      "id": "1706621400_1234",
-      "file": "src/main.lua",
-      "line_start": 42,
-      "line_end": 42,
-      "comment": "This function needs error handling for nil input.",
-      "timestamp": 1706621400,
-      "context_lines": ["local function process_data(input)"]
-    }
-  ]
-}
-```
 
 ## 💾 Storage Backends
 

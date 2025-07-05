@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - File-based storage backend option for persistent comment storage
 
+### Removed
+- JSON output format support - all outputs are now in Markdown format only
+- `output.format` configuration option
+- `ui.preview.format` configuration option
+
 ## [0.3.0] - 2025-07-04
 
 ### Added

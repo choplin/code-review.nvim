@@ -134,17 +134,8 @@ function M.preview()
     return
   end
 
-  -- Determine preview format
-  local preview_format = config.get("ui.preview.format")
-  local format
-  if preview_format == "auto" then
-    format = config.get("output.format")
-  else
-    format = preview_format
-  end
-
-  local content = formatter.format(comments, format)
-  ui.show_preview(content, format)
+  local content = formatter.format(comments)
+  ui.show_preview(content, "markdown")
 end
 
 --- Save review to file
@@ -156,13 +147,12 @@ function M.save(path)
     return
   end
 
-  local format = config.get("output.format")
   local review_utils = require("code-review.utils")
 
   -- Generate default path if not provided
   if not path then
     local save_dir = config.get("output.save_dir") or vim.fn.getcwd()
-    local filename = review_utils.generate_filename(format)
+    local filename = review_utils.generate_filename("markdown")
     local default_path = vim.fn.fnamemodify(save_dir .. "/" .. filename, ":p")
 
     -- Use vim.ui.input to get the save path
@@ -172,14 +162,14 @@ function M.save(path)
       completion = "file",
     }, function(input)
       if input and input ~= "" then
-        local content = formatter.format(comments, format)
-        formatter.save_to_file(content, input, format)
+        local content = formatter.format(comments)
+        formatter.save_to_file(content, input)
       end
     end)
   else
     -- If path is provided, save directly
-    local content = formatter.format(comments, format)
-    formatter.save_to_file(content, path, format)
+    local content = formatter.format(comments)
+    formatter.save_to_file(content, path)
   end
 end
 
@@ -191,8 +181,7 @@ function M.copy()
     return
   end
 
-  local format = config.get("output.format")
-  local content = formatter.format(comments, format)
+  local content = formatter.format(comments)
   vim.fn.setreg("+", content)
   vim.notify("Code reviews copied to clipboard")
 end

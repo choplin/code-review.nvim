@@ -15,7 +15,6 @@ local defaults = {
     },
     -- Preview window settings
     preview = {
-      format = "markdown", -- 'markdown' or 'json' or 'auto' (auto = same as output.format)
       split = "vertical", -- 'vertical' or 'horizontal' or 'float'
       vertical_width = 80,
       horizontal_height = 20,
@@ -44,7 +43,6 @@ local defaults = {
   },
   -- Output settings
   output = {
-    format = "markdown", -- 'markdown' or 'json'
     date_format = "%Y-%m-%d %H:%M:%S",
     -- Default save directory (nil means current directory)
     save_dir = nil,
