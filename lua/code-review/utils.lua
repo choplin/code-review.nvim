@@ -107,12 +107,11 @@ function M.escape_pattern(str)
 end
 
 --- Create a unique file name for saving
----@param format string 'markdown' or 'json'
+---@param format string Deprecated, always uses markdown
 ---@return string
 function M.generate_filename(format)
-  local ext = format == "json" and "json" or "md"
   local timestamp = os.date("%Y-%m-%d-%H%M%S")
-  return string.format("code-review-%s.%s", timestamp, ext)
+  return string.format("code-review-%s.md", timestamp)
 end
 
 --- Copy text to clipboard

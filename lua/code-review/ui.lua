@@ -188,7 +188,7 @@ end
 
 --- Show preview window
 ---@param content string The formatted content
----@param format string 'markdown' or 'json'
+---@param format string Deprecated, always uses markdown
 function M.show_preview(content, format)
   local conf = config.get("ui.preview")
   local buf
@@ -228,7 +228,7 @@ function M.show_preview(content, format)
 
   -- Set buffer content and options
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(content, "\n"))
-  vim.api.nvim_buf_set_option(buf, "filetype", format == "json" and "json" or "markdown")
+  vim.api.nvim_buf_set_option(buf, "filetype", "markdown")
   vim.api.nvim_buf_set_option(buf, "buftype", "acwrite")
   vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
   -- Set unique buffer name for identification
@@ -252,7 +252,7 @@ function M.show_preview(content, format)
   vim.api.nvim_create_autocmd("BufWriteCmd", {
     buffer = buf,
     callback = function()
-      M.handle_preview_save(buf, format)
+      M.handle_preview_save(buf)
       vim.api.nvim_buf_set_option(buf, "modified", false)
     end,
   })
@@ -260,14 +260,13 @@ end
 
 --- Handle saving preview buffer
 ---@param bufnr number
----@param format string
-function M.handle_preview_save(bufnr, format)
+function M.handle_preview_save(bufnr)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local content = table.concat(lines, "\n")
 
   -- Parse content back to comments
   local formatter = require("code-review.formatter")
-  local success, comments = pcall(formatter.parse, content, format)
+  local success, comments = pcall(formatter.parse, content)
 
   if not success then
     vim.notify("Failed to parse preview content: " .. tostring(comments), vim.log.levels.ERROR)

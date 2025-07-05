@@ -70,93 +70,18 @@ local function format_markdown(comments)
   return table.concat(lines, "\n")
 end
 
---- Format comments to JSON
+--- Format comments to markdown
 ---@param comments table[]
 ---@return string
-local function format_json(comments)
-  local date_format = config.get("output.date_format")
-
-  local data = {
-    date = os.date(date_format),
-    comment_count = #comments,
-    comments = {},
-  }
-
-  -- Sort comments by file and line number
-  local sorted_comments = vim.deepcopy(comments)
-  table.sort(sorted_comments, function(a, b)
-    if a.file ~= b.file then
-      return a.file < b.file
-    end
-    return a.line_start < b.line_start
-  end)
-
-  -- Add comments with clean structure
-  for _, comment in ipairs(sorted_comments) do
-    table.insert(data.comments, {
-      id = comment.id,
-      file = comment.file,
-      line_start = comment.line_start,
-      line_end = comment.line_end,
-      comment = comment.comment,
-      timestamp = comment.timestamp,
-      context_lines = comment.context_lines,
-    })
-  end
-
-  -- Pretty print JSON with indentation
-  local json = vim.fn.json_encode(data)
-  -- Neovim 0.9+ has built-in JSON formatting
-  if vim.fn.exists("*json_decode") == 1 and vim.fn.exists("*json_encode") == 1 then
-    local decoded = vim.fn.json_decode(json)
-    if decoded then
-      -- Re-encode with formatting
-      json = vim.json.encode(decoded)
-    end
-  end
-  return json
-end
-
---- Format comments based on output format
----@param comments table[]
----@param format string? 'markdown' or 'json'
----@return string
-function M.format(comments, format)
-  format = format or config.get("output.format")
-
-  if format == "json" then
-    return format_json(comments)
-  else
-    return format_markdown(comments)
-  end
+function M.format(comments)
+  return format_markdown(comments)
 end
 
 --- Parse formatted content back to comments
 ---@param content string
----@param format string 'markdown' or 'json'
 ---@return table[] comments
-function M.parse(content, format)
-  if format == "json" then
-    return M.parse_json(content)
-  else
-    return M.parse_markdown(content)
-  end
-end
-
---- Parse JSON content
----@param content string
----@return table[]
-function M.parse_json(content)
-  local ok, data = pcall(vim.fn.json_decode, content)
-  if not ok then
-    error("Invalid JSON content")
-  end
-
-  if not data.comments then
-    error("No comments found in JSON")
-  end
-
-  return data.comments
+function M.parse(content)
+  return M.parse_markdown(content)
 end
 
 --- Parse markdown content
@@ -266,13 +191,12 @@ end
 --- Save formatted content to file
 ---@param content string
 ---@param path string?
----@param format string
-function M.save_to_file(content, path, format)
+function M.save_to_file(content, path)
   local utils = require("code-review.utils")
 
   if not path then
     local save_dir = config.get("output.save_dir") or vim.fn.getcwd()
-    local filename = utils.generate_filename(format)
+    local filename = utils.generate_filename("markdown")
     path = vim.fn.fnamemodify(save_dir .. "/" .. filename, ":p")
   else
     path = vim.fn.fnamemodify(path, ":p")
