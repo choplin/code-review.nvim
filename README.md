@@ -436,6 +436,9 @@ require('code-review').setup({
 # Install formatter and linter
 cargo install stylua
 luarocks install luacheck
+
+# Clone test dependencies
+git clone --depth 1 https://github.com/echasnovski/mini.nvim deps/mini.nvim
 ```
 
 ### Commands
@@ -447,9 +450,19 @@ make format
 # Run linter
 make lint
 
-# Run both
+# Run both formatter and linter
 make check
+
+# Run tests
+make test
+
+# Run specific test
+make test-formatter
 ```
+
+### Testing
+
+Tests are written using [mini.test](https://github.com/echasnovski/mini.nvim/blob/main/readmes/mini-test.md). Test files should be placed in the `tests/` directory with the naming pattern `test_*.lua`.
 
 ## 🤝 Contributing
 

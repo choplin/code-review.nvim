@@ -58,8 +58,13 @@ luac.out
 
 # Test files
 test/
-tests/
 
 # Build directories
 build/
 dist/
+
+# Dependencies
+deps/
+
+# Code review storage
+.code-review-storage/

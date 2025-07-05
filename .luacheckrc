@@ -14,6 +14,11 @@ ignore = {
   "631", -- max_line_length, vscode pkg URL is too long
 }
 
+-- Exclude dependency directories
+exclude_files = {
+  "deps/",
+}
+
 -- Global objects defined by the C code
 read_globals = {
   "vim",
@@ -35,6 +40,21 @@ files = {
   ["lua/code-review/formatter.lua"] = {
     ignore = {
       "i", -- loop counter in parse_markdown
+    },
+  },
+  ["tests/"] = {
+    read_globals = {
+      "MiniTest",
+    },
+  },
+  ["tests/minimal_init.lua"] = {
+    ignore = {
+      "122", -- Setting read-only field MiniTest.expect.match (intentional extension)
+    },
+  },
+  ["tests/test_formatter.lua"] = {
+    ignore = {
+      "122", -- Setting read-only field vim.notify (intentional mocking)
     },
   },
 }
