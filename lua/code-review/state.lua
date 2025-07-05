@@ -51,7 +51,7 @@ function M.sync_from_storage()
   if backend == "file" then
     -- Force reload from storage
     -- This ensures we pick up any external changes
-    local storage_backend = get_storage()
+    get_storage()
 
     -- Refresh UI to reflect current state
     M.refresh_ui()
