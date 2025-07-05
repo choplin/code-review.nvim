@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- File-based storage backend option for persistent comment storage
+
 ## [0.3.0] - 2025-07-04
 
 ### Added
