@@ -270,4 +270,9 @@ function M.format_comment_as_markdown(comment_data)
   return table.concat(lines, "\n")
 end
 
+--- Reload comments from storage (invalidate cache)
+function M.reload()
+  invalidate_cache()
+end
+
 return M

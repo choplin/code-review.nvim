@@ -11,6 +11,7 @@ local utils = require("code-review.utils")
 ---@param opts table? User configuration
 function M.setup(opts)
   config.setup(opts or {})
+  state.init()
 
   -- Create commands
   vim.api.nvim_create_user_command("CodeReviewClear", function()
@@ -101,15 +102,17 @@ function M.setup(opts)
     end
   end
 
-  -- Setup autocmd to sync state and update UI
-  vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost", "CursorHold" }, {
-    group = vim.api.nvim_create_augroup("CodeReviewSync", { clear = true }),
-    callback = function()
-      -- Sync from storage and update UI
-      require("code-review.state").sync_from_storage()
-    end,
-    desc = "Sync code review state and update UI",
-  })
+  -- Setup autocmd to sync state and update UI (only for file backend)
+  if config.get("comment.storage.backend") == "file" then
+    vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost", "CursorHold" }, {
+      group = vim.api.nvim_create_augroup("CodeReviewSync", { clear = true }),
+      callback = function()
+        -- Sync from storage and update UI
+        require("code-review.state").sync_from_storage()
+      end,
+      desc = "Sync code review state and update UI",
+    })
+  end
 end
 
 --- Clear all comments
@@ -120,13 +123,11 @@ end
 --- Add a comment at the current location
 ---@param context_lines number? Number of lines before/after to include
 function M.add_comment(context_lines)
-  state.ensure_active()
   comment.add(context_lines)
 end
 
 --- Show preview of the review
 function M.preview()
-  state.ensure_active()
   local comments = state.get_comments()
   if #comments == 0 then
     vim.notify("No comments to preview", vim.log.levels.WARN)
@@ -149,7 +150,6 @@ end
 --- Save review to file
 ---@param path string? File path to save to
 function M.save(path)
-  state.ensure_active()
   local comments = state.get_comments()
   if #comments == 0 then
     vim.notify("No comments to save", vim.log.levels.WARN)
@@ -185,7 +185,6 @@ end
 
 --- Copy review to clipboard
 function M.copy()
-  state.ensure_active()
   local comments = state.get_comments()
   if #comments == 0 then
     vim.notify("No comments to copy", vim.log.levels.WARN)
@@ -200,8 +199,6 @@ end
 
 --- Show comment at cursor position
 function M.show_comment_at_cursor()
-  state.ensure_active()
-
   local bufnr = vim.api.nvim_get_current_buf()
   local file = utils.normalize_path(vim.api.nvim_buf_get_name(bufnr))
   local row = vim.api.nvim_win_get_cursor(0)[1]
@@ -224,8 +221,6 @@ end
 
 --- Delete comment at cursor position
 function M.delete_comment_at_cursor()
-  state.ensure_active()
-
   local bufnr = vim.api.nvim_get_current_buf()
   local file = utils.normalize_path(vim.api.nvim_buf_get_name(bufnr))
   local row = vim.api.nvim_win_get_cursor(0)[1]

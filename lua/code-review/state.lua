@@ -2,12 +2,12 @@ local M = {}
 
 -- Storage backend
 local storage = nil
+local initialized = false
 
---- Get storage backend based on config
----@return table
-local function get_storage()
-  if storage then
-    return storage
+--- Initialize storage backend
+function M.init()
+  if initialized then
+    return
   end
 
   local config = require("code-review.config")
@@ -20,6 +20,13 @@ local function get_storage()
   end
 
   storage.init()
+  initialized = true
+end
+
+--- Get storage backend
+---@return table
+local function get_storage()
+  assert(initialized, "State not initialized. Call require('code-review').setup() first.")
   return storage
 end
 
@@ -27,11 +34,6 @@ end
 ---@return boolean
 function M.is_active()
   return get_storage().is_active()
-end
-
---- Initialize or ensure session is active
-function M.ensure_active()
-  get_storage().init()
 end
 
 --- Refresh UI elements (markers, etc.) after state changes
@@ -44,18 +46,13 @@ end
 
 --- Sync state from storage (for file backend)
 function M.sync_from_storage()
-  local config = require("code-review.config")
-  local backend = config.get("comment.storage.backend")
-
-  -- Only sync for file storage backend
-  if backend == "file" then
-    -- Force reload from storage
-    -- This ensures we pick up any external changes
-    get_storage()
-
-    -- Refresh UI to reflect current state
-    M.refresh_ui()
+  -- Explicitly reload storage if it has reload method
+  if storage and storage.reload then
+    storage.reload()
   end
+
+  -- Refresh UI to reflect any changes
+  M.refresh_ui()
 end
 
 --- Clear all comments but keep session active
@@ -107,6 +104,7 @@ function M.update_comment(id, updates)
   -- Delete old and add new
   if storage_backend.delete(id) then
     storage_backend.add(updated_comment)
+    M.refresh_ui()
     return true
   end
   return false
