@@ -101,21 +101,20 @@ function M.setup(opts)
     end
   end
 
-  -- Setup autocmd to show indicators when entering a buffer
-  vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost" }, {
-    group = vim.api.nvim_create_augroup("CodeReviewIndicators", { clear = true }),
+  -- Setup autocmd to sync state and update UI
+  vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost", "CursorHold" }, {
+    group = vim.api.nvim_create_augroup("CodeReviewSync", { clear = true }),
     callback = function()
-      -- Update indicators for current buffer
-      require("code-review.comment").update_indicators()
+      -- Sync from storage and update UI
+      require("code-review.state").sync_from_storage()
     end,
-    desc = "Update code review indicators",
+    desc = "Sync code review state and update UI",
   })
 end
 
 --- Clear all comments
 function M.clear()
   state.clear()
-  comment.update_indicators()
 end
 
 --- Add a comment at the current location
@@ -253,7 +252,6 @@ function M.delete_comment_at_cursor()
     }, function(choice)
       if choice then
         state.delete_comment(choice.id)
-        require("code-review.comment").update_indicators()
         vim.notify("Comment deleted")
       end
     end)
@@ -270,7 +268,6 @@ function M.delete_comment_at_cursor()
     }, function(choice)
       if choice == "Yes" then
         state.delete_comment(comment_data.id)
-        require("code-review.comment").update_indicators()
         vim.notify("Comment deleted")
       end
     end)

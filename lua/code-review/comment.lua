@@ -43,11 +43,8 @@ function M.add(context_lines)
       context_lines = context.lines,
     }
 
-    -- Add to state
+    -- Add to state (state will handle UI refresh)
     state.add_comment(comment_data)
-
-    -- Show visual indicator if enabled
-    M.update_indicators()
 
     -- Copy to clipboard if enabled
     local config = require("code-review.config")
@@ -179,10 +176,16 @@ add_virtual_text = function(bufnr, comments)
       text = text .. first_line
     end
 
-    vim.api.nvim_buf_set_extmark(bufnr, ns_virtual_text, line - 1, 0, {
-      virt_text = { { text, config.hl } },
-      virt_text_pos = "eol",
-    })
+    -- Ensure buffer is loaded and line is valid
+    if vim.api.nvim_buf_is_loaded(bufnr) then
+      local line_count = vim.api.nvim_buf_line_count(bufnr)
+      if line <= line_count then
+        pcall(vim.api.nvim_buf_set_extmark, bufnr, ns_virtual_text, line - 1, 0, {
+          virt_text = { { text, config.hl } },
+          virt_text_pos = "eol",
+        })
+      end
+    end
   end
 end
 

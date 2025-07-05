@@ -14,7 +14,7 @@ local function get_storage_dir()
   end
 
   local config = require("code-review.config")
-  local dir = config.get("comment.storage.file.dir") or ".code-review"
+  local dir = config.get("comment.storage.file.dir")
   storage_dir = utils.get_storage_dir(dir)
   return storage_dir
 end

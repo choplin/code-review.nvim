@@ -418,6 +418,7 @@ require('code-review').setup({
 ### File Storage
 
 Comments are stored as individual files on disk, perfect for:
+
 - Persistent reviews across sessions
 - Real-time monitoring by external tools
 - Integration with AI assistants

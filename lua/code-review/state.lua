@@ -11,7 +11,7 @@ local function get_storage()
   end
 
   local config = require("code-review.config")
-  local backend = config.get("comment.storage.backend") or "memory"
+  local backend = config.get("comment.storage.backend")
 
   if backend == "file" then
     storage = require("code-review.storage.file")
@@ -34,16 +34,43 @@ function M.ensure_active()
   get_storage().init()
 end
 
+--- Refresh UI elements (markers, etc.) after state changes
+function M.refresh_ui()
+  -- Update visual indicators (signs and virtual text)
+  require("code-review.comment").update_indicators()
+
+  -- Future: Update other UI elements like statusline, floating windows, etc.
+end
+
+--- Sync state from storage (for file backend)
+function M.sync_from_storage()
+  local config = require("code-review.config")
+  local backend = config.get("comment.storage.backend")
+
+  -- Only sync for file storage backend
+  if backend == "file" then
+    -- Force reload from storage
+    -- This ensures we pick up any external changes
+    local storage_backend = get_storage()
+
+    -- Refresh UI to reflect current state
+    M.refresh_ui()
+  end
+end
+
 --- Clear all comments but keep session active
 function M.clear()
   get_storage().clear()
+  M.refresh_ui()
   vim.notify("All comments cleared")
 end
 
 --- Add a comment to the session
 ---@param comment_data table Comment data
 function M.add_comment(comment_data)
-  return get_storage().add(comment_data)
+  local id = get_storage().add(comment_data)
+  M.refresh_ui()
+  return id
 end
 
 --- Get all comments
@@ -89,7 +116,11 @@ end
 ---@param id string Comment ID
 ---@return boolean success
 function M.delete_comment(id)
-  return get_storage().delete(id)
+  local success = get_storage().delete(id)
+  if success then
+    M.refresh_ui()
+  end
+  return success
 end
 
 --- Replace all comments (used for preview editing)
@@ -104,6 +135,9 @@ function M.replace_comments(new_comments)
   for _, comment in ipairs(new_comments) do
     storage_backend.add(comment)
   end
+
+  -- Refresh UI after replacing all comments
+  M.refresh_ui()
 end
 
 --- Get session metadata
