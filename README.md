@@ -448,17 +448,6 @@ require('code-review').setup({
 3. Comments persist across Neovim sessions
 4. External tools can monitor the directory for new files
 
-#### AI Integration Example
-
-```bash
-# Start Claude Code monitoring the review directory
-claude-code --watch .code-review/
-
-# Or for git root storage
-claude-code --watch .
-```
-
-As you add comments in Neovim, Claude Code will automatically process each new file.
 
 ## 🔨 Development
 
