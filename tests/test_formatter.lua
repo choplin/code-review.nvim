@@ -99,9 +99,9 @@ T["save to file"] = function()
   -- Mock vim.notify to suppress output during test
   local original_notify = vim.notify
   vim.notify = function() end
-  
+
   formatter.save_to_file(content, filepath)
-  
+
   -- Restore original notify
   vim.notify = original_notify
 
