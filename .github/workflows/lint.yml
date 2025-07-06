@@ -33,3 +33,28 @@ jobs:
       - name: Run luacheck
         run: luacheck .
 
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Neovim
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: stable
+
+      - name: Clone mini.nvim
+        run: |
+          git clone --depth 1 https://github.com/echasnovski/mini.nvim deps/mini.nvim
+
+      - name: Verify Neovim installation
+        run: nvim --version
+
+      - name: Run tests
+        run: |
+          make test || exit_code=$?
+          if [ "$exit_code" -ne 0 ]; then
+            echo "Test failed with exit code: $exit_code"
+            exit $exit_code
+          fi
