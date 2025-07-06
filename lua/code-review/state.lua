@@ -156,4 +156,11 @@ function M.get_comments_at_location(file, line)
   return get_storage().get_at_location(file, line)
 end
 
+--- Reset internal state (for testing purposes)
+---@private
+function M._reset()
+  initialized = false
+  storage = nil
+end
+
 return M
