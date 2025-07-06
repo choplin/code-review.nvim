@@ -105,6 +105,11 @@ function M.parse_markdown(content)
 
     -- File header
     if line:match("^##%s+(.+)") then
+      -- Save any pending comment before starting new file
+      if current_comment and current_comment.comment and current_comment.comment ~= "" then
+        table.insert(comments, current_comment)
+      end
+
       local file = line:match("^##%s+(.+)")
       current_comment = { file = file }
       i = i + 1
@@ -157,6 +162,12 @@ function M.parse_markdown(content)
       if num and code then
         table.insert(current_comment.context_lines, code)
       end
+      i = i + 1
+      goto continue
+    end
+
+    -- Skip Time line
+    if line:match("^%*%*Time%*%*:") then
       i = i + 1
       goto continue
     end

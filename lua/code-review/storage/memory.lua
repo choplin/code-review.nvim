@@ -86,4 +86,12 @@ function M.get_at_location(file, line)
   return results
 end
 
+--- Reset internal state (for testing purposes)
+---@private
+function M._reset()
+  session.active = false
+  session.comments = {}
+  session.start_time = nil
+end
+
 return M
