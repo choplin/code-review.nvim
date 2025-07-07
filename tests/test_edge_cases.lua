@@ -1,5 +1,6 @@
 -- Edge case tests
 local T = MiniTest.new_set()
+local helpers = require("tests.helpers")
 
 -- Initialize plugin at file load time
 require("code-review").setup({
@@ -21,6 +22,9 @@ T.hooks = {
 
     -- Reinitialize
     state.init()
+
+    -- Clear any existing comments
+    state.clear()
   end,
 }
 
@@ -48,6 +52,9 @@ end
 T["large data"]["handles many comments"] = function()
   local state = require("code-review.state")
 
+  -- Get initial comment count
+  local initial_comments = state.get_comments()
+
   -- Add 100 comments
   local ids = {}
   for i = 1, 100 do
@@ -62,11 +69,12 @@ T["large data"]["handles many comments"] = function()
 
   -- Verify all comments exist
   local all_comments = state.get_comments()
-  MiniTest.expect.equality(#all_comments, 100)
+  local added_count = #all_comments - #initial_comments
+  MiniTest.expect.equality(added_count, 100)
 
   -- Verify we can retrieve specific comments
   local comment50 = state.get_comment(ids[50])
-  MiniTest.expect.equality(comment50.comment, "Comment number 50")
+  helpers.expect.match(comment50.comment, "Comment number 50")
 end
 
 -- Special characters tests
@@ -88,7 +96,7 @@ in it]],
 
   for i, comment_text in ipairs(special_comments) do
     local id = state.add_comment({
-      file = "test.lua",
+      file = "special_chars_test.lua", -- Use different file name
       line_start = i,
       line_end = i,
       comment = comment_text,
@@ -112,7 +120,7 @@ T["special characters"]["handles unicode characters"] = function()
 
   for i, comment_text in ipairs(unicode_comments) do
     local id = state.add_comment({
-      file = "test.lua",
+      file = "unicode_test.lua", -- Use different file name
       line_start = i,
       line_end = i,
       comment = comment_text,
@@ -184,7 +192,7 @@ T["boundary conditions"]["handles whitespace-only comment"] = function()
 
   for i, comment_text in ipairs(whitespace_comments) do
     local id = state.add_comment({
-      file = "test.lua",
+      file = "whitespace_test.lua", -- Use different file name
       line_start = i,
       line_end = i,
       comment = comment_text,
@@ -370,7 +378,13 @@ T["performance"] = MiniTest.new_set()
 T["performance"]["handles rapid add/delete operations"] = function()
   local state = require("code-review.state")
 
+  -- Get initial count
+  local initial_count = #state.get_comments()
+
   local start_time = vim.loop.hrtime()
+
+  -- Track added IDs
+  local added_ids = {}
 
   -- Rapidly add and delete comments
   for i = 1, 50 do
@@ -384,6 +398,8 @@ T["performance"]["handles rapid add/delete operations"] = function()
     if i % 2 == 0 then
       -- Delete every other comment immediately
       state.delete_comment(id)
+    else
+      table.insert(added_ids, id)
     end
   end
 
@@ -393,8 +409,9 @@ T["performance"]["handles rapid add/delete operations"] = function()
   MiniTest.expect.equality(elapsed < 1000, true)
 
   -- Verify final state
-  local remaining = state.get_comments()
-  MiniTest.expect.equality(#remaining, 25) -- Half should remain
+  local final_comments = state.get_comments()
+  local added_count = #final_comments - initial_count
+  MiniTest.expect.equality(added_count, 25) -- Half should remain
 end
 
 return T

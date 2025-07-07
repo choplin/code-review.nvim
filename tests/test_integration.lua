@@ -14,8 +14,19 @@ T.hooks = {
   end,
 
   pre_case = function()
-    -- Clear state before each test
-    require("code-review.state").clear()
+    -- Reset and reinitialize for clean state
+    local state = require("code-review.state")
+    local memory = require("code-review.storage.memory")
+
+    -- Use _reset for complete cleanup
+    state._reset()
+    memory._reset()
+
+    -- Reinitialize
+    state.init()
+
+    -- Clear any existing comments
+    state.clear()
   end,
 }
 
