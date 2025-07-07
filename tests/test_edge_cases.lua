@@ -1,6 +1,5 @@
 -- Edge case tests
 local T = MiniTest.new_set()
-local helpers = require("tests.helpers")
 
 -- Initialize plugin at file load time
 require("code-review").setup({
@@ -15,11 +14,11 @@ T.hooks = {
     -- Reset and reinitialize for clean state
     local state = require("code-review.state")
     local memory = require("code-review.storage.memory")
-    
+
     -- Use _reset for complete cleanup
     state._reset()
     memory._reset()
-    
+
     -- Reinitialize
     state.init()
   end,
@@ -139,7 +138,7 @@ T["special characters"]["handles special file names"] = function()
     "~/home/path/file.lua",
   }
 
-  for i, filename in ipairs(special_files) do
+  for _, filename in ipairs(special_files) do
     local id = state.add_comment({
       file = filename,
       line_start = 1,
@@ -287,21 +286,21 @@ T["multiple comments"]["handles overlapping comment ranges"] = function()
   local state = require("code-review.state")
 
   -- Add overlapping comments
-  local id1 = state.add_comment({
+  state.add_comment({
     file = "test.lua",
     line_start = 5,
     line_end = 10,
     comment = "Comment 1: lines 5-10",
   })
 
-  local id2 = state.add_comment({
+  state.add_comment({
     file = "test.lua",
     line_start = 8,
     line_end = 15,
     comment = "Comment 2: lines 8-15",
   })
 
-  local id3 = state.add_comment({
+  state.add_comment({
     file = "test.lua",
     line_start = 7,
     line_end = 12,
