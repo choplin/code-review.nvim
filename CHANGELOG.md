@@ -7,15 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-07-07
+
 ### Added
 - File-based storage backend option for persistent comment storage
-- Test framework using mini.test
+- Comprehensive test coverage using mini.test framework
 - GitHub Actions CI job for running tests
 
+### Fixed
+- Formatter bug where comments were lost when parsing multiple files in markdown
+
 ### Removed
-- JSON output format support - all outputs are now in Markdown format only
-- `output.format` configuration option
-- `ui.preview.format` configuration option
+- **BREAKING CHANGE**: JSON output format support removed - all outputs are now in Markdown format only
 
 ## [0.3.0] - 2025-07-04
 
