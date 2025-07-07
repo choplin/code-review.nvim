@@ -57,4 +57,9 @@ files = {
       "122", -- Setting read-only field vim.notify (intentional mocking)
     },
   },
+  ["tests/test_error_handling.lua"] = {
+    ignore = {
+      "122", -- Setting read-only fields for intentional mocking in tests
+    },
+  },
 }
