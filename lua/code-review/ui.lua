@@ -468,7 +468,7 @@ function M.show_comment_list(comments)
   end
 
   -- Create window
-  vim.api.nvim_open_win(buf, true, {
+  local win = vim.api.nvim_open_win(buf, true, {
     relative = "cursor",
     row = row_offset,
     col = 0,
@@ -479,6 +479,10 @@ function M.show_comment_list(comments)
     title = " Review Comments ",
     title_pos = "center",
   })
+  
+  -- Enable word wrap in the floating window
+  vim.api.nvim_win_set_option(win, "wrap", true)
+  vim.api.nvim_win_set_option(win, "linebreak", true)
 
   -- Setup keymaps
   vim.api.nvim_buf_set_keymap(buf, "n", "q", "<cmd>close<CR>", {
