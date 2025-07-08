@@ -397,4 +397,80 @@ function M.list_comments()
   M.list_with_quickfix()
 end
 
+--- List all threads using quickfix
+function M.list_threads_with_quickfix()
+  local comments = state.get_comments()
+
+  if #comments == 0 then
+    vim.notify("No threads to display", vim.log.levels.INFO)
+    return
+  end
+
+  -- Build thread tree
+  local thread = require("code-review.thread")
+  local threads = thread.build_thread_tree(comments)
+
+  -- Get thread statuses
+  local all_threads = state.get_all_threads()
+
+  -- Convert threads to quickfix items
+  local qf_items = {}
+  for thread_id, thread_data in pairs(threads) do
+    local root_comment = thread_data.root_comment
+    local thread_status = all_threads[thread_id] and all_threads[thread_id].status or "open"
+    
+    -- Get status icon
+    local status_icon = ""
+    if root_comment.thread_status == "action-required" then
+      status_icon = "[!] "
+    elseif root_comment.thread_status == "waiting-review" then
+      status_icon = "[⏳] "
+    elseif thread_status == "resolved" then
+      status_icon = "[✓] "
+    end
+    
+    -- Create preview text with thread info
+    local text = string.format("%s%s (%d comments)", 
+      status_icon,
+      root_comment.comment:match("^[^\n]*") or root_comment.comment,
+      #thread_data.replies + 1)
+    
+    if #text > 80 then
+      text = text:sub(1, 77) .. "..."
+    end
+    
+    table.insert(qf_items, {
+      filename = root_comment.file,
+      lnum = root_comment.line_start,
+      col = 1,
+      text = text,
+      user_data = root_comment,
+    })
+  end
+
+  -- Sort by file and line
+  table.sort(qf_items, function(a, b)
+    if a.filename ~= b.filename then
+      return a.filename < b.filename
+    end
+    return a.lnum < b.lnum
+  end)
+
+  -- Set quickfix list
+  vim.fn.setqflist({}, "r", {
+    title = "Code Review Threads",
+    items = qf_items,
+  })
+
+  -- Open quickfix window
+  vim.cmd("copen")
+end
+
+--- List all threads
+function M.list_threads()
+  -- For now, only support quickfix for thread listing
+  -- TODO: Add telescope and fzf-lua support for threads
+  M.list_threads_with_quickfix()
+end
+
 return M

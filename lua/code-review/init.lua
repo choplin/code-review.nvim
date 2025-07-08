@@ -231,7 +231,7 @@ end
 
 --- List all comments
 function M.list_comments()
-  require("code-review.list").list_comments()
+  require("code-review.list").list_threads()
 end
 
 --- Reply to comment at cursor position
