@@ -65,7 +65,33 @@ end
 --- Add a comment to the session
 ---@param comment_data table Comment data
 function M.add_comment(comment_data)
-  local id = get_storage().add(comment_data)
+  local storage_backend = get_storage()
+
+  -- Prepare metadata for root comments
+  if not comment_data.parent_id then
+    comment_data.author = comment_data.author or vim.fn.expand("$USER")
+    comment_data.replies = {}
+  end
+
+  -- Add comment to storage (this will generate the real ID)
+  local id = storage_backend.add(comment_data)
+
+  -- For root comments, set thread_id and thread_status
+  if not comment_data.parent_id then
+    local thread_id = id .. "_thread"
+
+    -- Get the comment and update it with thread info
+    local comment = storage_backend.get(id)
+    if comment then
+      comment.thread_id = thread_id
+      comment.thread_status = "open"
+
+      -- Re-save with thread info
+      storage_backend.delete(id)
+      storage_backend.add(comment)
+    end
+  end
+
   M.refresh_ui()
   return id
 end
@@ -154,6 +180,85 @@ end
 ---@return table[]
 function M.get_comments_at_location(file, line)
   return get_storage().get_at_location(file, line)
+end
+
+--- Add a reply to a comment
+---@param parent_id string Parent comment ID (can be any comment in the thread)
+---@param reply_text string Reply text
+---@return string|nil reply_id
+function M.add_reply(parent_id, reply_text)
+  local parent = M.get_comment(parent_id)
+  if not parent then
+    vim.notify("Parent comment not found", vim.log.levels.ERROR)
+    return nil
+  end
+
+  local thread = require("code-review.thread")
+
+  -- Always create a reply to the thread, not nested under specific comment
+  local reply = thread.create_reply(parent, reply_text)
+
+  -- Add the reply
+  local id = get_storage().add(reply)
+
+  M.refresh_ui()
+  return id
+end
+
+--- Get all comments in a thread
+---@param thread_id string Thread ID
+---@return table[] comments
+function M.get_thread_comments(thread_id)
+  local all_comments = M.get_comments()
+  local thread = require("code-review.thread")
+  return thread.get_thread_comments(thread_id, all_comments)
+end
+
+--- Resolve a thread
+---@param thread_id string Thread ID
+---@return boolean success
+function M.resolve_thread(thread_id)
+  local storage_backend = get_storage()
+  local resolved_by = vim.fn.expand("$USER")
+  local success = storage_backend.update_thread_status(thread_id, "resolved", resolved_by)
+
+  if success then
+    M.refresh_ui()
+    vim.notify("Thread resolved", vim.log.levels.INFO)
+  end
+
+  return success
+end
+
+--- Reopen a thread
+---@param thread_id string Thread ID
+---@return boolean success
+function M.reopen_thread(thread_id)
+  local storage_backend = get_storage()
+  local success = storage_backend.update_thread_status(thread_id, "open", nil)
+
+  if success then
+    M.refresh_ui()
+    vim.notify("Thread reopened", vim.log.levels.INFO)
+  end
+
+  return success
+end
+
+--- Get all thread statuses
+---@return table<string, table>
+function M.get_all_threads()
+  local storage_backend = get_storage()
+  if storage_backend.get_all_threads then
+    return storage_backend.get_all_threads()
+  end
+  return {}
+end
+
+--- Get storage backend (for internal use)
+---@return table storage
+function M.get_storage()
+  return get_storage()
 end
 
 --- Reset internal state (for testing purposes)

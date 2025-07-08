@@ -41,6 +41,7 @@ Add comments to any line or code block, export as structured Markdown, and paste
 - 👁️ **Smart navigation** - Jump between comments, view at cursor
 - ✏️ **Live preview** - See and edit all your comments in one place
 - 🔍 **Find comments** - List all with `<leader>rl` using Telescope, fzf, or quickfix
+- 💬 **Thread discussions** - Reply to comments and resolve threads
 
 ## 📦 Installation
 
@@ -268,6 +269,8 @@ end
 | `:CodeReviewCopy`            | `<leader>ry`   | Copy review to clipboard                                    |
 | `:CodeReviewClear`           | `<leader>rx`   | Clear all review comments                                   |
 | `:CodeReviewDeleteComment`   | `<leader>rd`   | Delete comment at cursor position                           |
+| `:CodeReviewResolveThread`   | -              | Mark current thread as resolved                             |
+| `:CodeReviewReopenThread`    | -              | Reopen a resolved thread                                    |
 
 ### Visual Indicators
 
@@ -304,6 +307,15 @@ The preview buffer is fully editable. You can:
 - Reorder comments
 - Save with `:w` to update the review
 - Close with `q`
+
+### Thread Discussions
+
+Comments automatically create discussion threads. You can:
+
+- **Reply to comments**: Add comments on the same line to create a thread
+- **Resolve threads**: Use `:CodeReviewResolveThread` when discussion is complete
+- **Reopen threads**: Use `:CodeReviewReopenThread` if more discussion is needed
+- Thread status is displayed in the preview (`[open]` or `[resolved]`)
 
 ### Comment List Picker
 

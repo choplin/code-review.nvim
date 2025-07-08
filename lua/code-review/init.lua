@@ -54,6 +54,28 @@ function M.setup(opts)
     M.delete_comment_at_cursor()
   end, { desc = "Delete comment at cursor position" })
 
+  vim.api.nvim_create_user_command("CodeReviewReply", function()
+    M.reply_to_comment_at_cursor()
+  end, { desc = "Reply to comment at cursor position" })
+
+  vim.api.nvim_create_user_command("CodeReviewResolve", function()
+    M.resolve_thread_at_cursor()
+  end, { desc = "Resolve thread at cursor position" })
+
+  vim.api.nvim_create_user_command("CodeReviewSetStatus", function(args)
+    if args.args == "" then
+      vim.notify("Usage: :CodeReviewSetStatus <draft|open|resolved|closed>", vim.log.levels.ERROR)
+      return
+    end
+    M.set_review_status(args.args)
+  end, {
+    desc = "Set review status",
+    nargs = 1,
+    complete = function()
+      return { "draft", "open", "resolved", "closed" }
+    end,
+  })
+
   -- Setup keymaps if enabled
   local keymaps = config.get("keymaps")
   if keymaps then
@@ -79,6 +101,8 @@ function M.setup(opts)
             show_comment = "Show comment at cursor",
             list_comments = "List all comments",
             delete_comment = "Delete comment at cursor",
+            reply_comment = "Reply to comment at cursor",
+            resolve_thread = "Resolve thread at cursor",
           }
 
           local func = {
@@ -92,6 +116,8 @@ function M.setup(opts)
             show_comment = M.show_comment_at_cursor,
             list_comments = M.list_comments,
             delete_comment = M.delete_comment_at_cursor,
+            reply_comment = M.reply_to_comment_at_cursor,
+            resolve_thread = M.resolve_thread_at_cursor,
           }
 
           if func[action] then
@@ -206,6 +232,149 @@ end
 --- List all comments
 function M.list_comments()
   require("code-review.list").list_comments()
+end
+
+--- Reply to comment at cursor position
+function M.reply_to_comment_at_cursor()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local file = utils.normalize_path(vim.api.nvim_buf_get_name(bufnr))
+  local row = vim.api.nvim_win_get_cursor(0)[1]
+
+  -- Find comments for current line
+  local line_comments = state.get_comments_at_location(file, row)
+
+  if #line_comments == 0 then
+    vim.notify("No comment at cursor position", vim.log.levels.WARN)
+    return
+  end
+
+  -- Group comments by thread
+  local threads = {}
+  for _, c in ipairs(line_comments) do
+    local thread_id = c.thread_id or c.id
+    if not threads[thread_id] then
+      threads[thread_id] = {
+        id = thread_id,
+        root_comment = nil,
+        comments = {},
+      }
+    end
+    table.insert(threads[thread_id].comments, c)
+    -- Track root comment
+    if not c.parent_id then
+      threads[thread_id].root_comment = c
+    end
+  end
+
+  -- Select thread if multiple threads exist
+  local thread_count = vim.tbl_count(threads)
+
+  if thread_count == 1 then
+    -- Single thread case
+    local selected_thread = threads[next(threads)]
+    local comment_to_reply = selected_thread.root_comment or selected_thread.comments[1]
+
+    -- Show input UI for reply with the same context as the original comment
+    ui.show_comment_input(function(reply_text)
+      if reply_text and reply_text ~= "" then
+        state.add_reply(comment_to_reply.id, reply_text)
+        vim.notify("Reply added", vim.log.levels.INFO)
+      end
+    end, {
+      file = comment_to_reply.file,
+      line_start = comment_to_reply.line_start,
+      line_end = comment_to_reply.line_end,
+      lines = comment_to_reply.context_lines or {},
+    }, " Reply to Comment (C-CR to submit) ")
+  else
+    -- Create thread selection items
+    local thread_items = {}
+    for _, thread in pairs(threads) do
+      -- Always use the first comment (oldest) for preview
+      local first_comment = thread.comments[1]
+      local preview = first_comment.comment:sub(1, 50)
+      if #first_comment.comment > 50 then
+        preview = preview .. "..."
+      end
+      local item = {
+        display = string.format("%d. %s (%d comments)", #thread_items + 1, preview, #thread.comments),
+        thread = thread,
+      }
+      table.insert(thread_items, item)
+    end
+
+    -- Show thread selection
+    vim.ui.select(thread_items, {
+      prompt = "Select thread to reply to:",
+      format_item = function(item)
+        return item.display
+      end,
+    }, function(choice)
+      if not choice then
+        return
+      end
+
+      local selected_thread = choice.thread
+
+      -- Continue with reply process inside callback
+      local comment_to_reply = selected_thread.root_comment or selected_thread.comments[1]
+
+      -- Show input UI for reply with the same context as the original comment
+      ui.show_comment_input(function(reply_text)
+        if reply_text and reply_text ~= "" then
+          state.add_reply(comment_to_reply.id, reply_text)
+          vim.notify("Reply added", vim.log.levels.INFO)
+        end
+      end, {
+        file = comment_to_reply.file,
+        line_start = comment_to_reply.line_start,
+        line_end = comment_to_reply.line_end,
+        lines = comment_to_reply.context_lines or {},
+      }, " Reply to Comment (C-CR to submit) ")
+    end)
+  end
+end
+
+--- Resolve thread at cursor position
+function M.resolve_thread_at_cursor()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local file = utils.normalize_path(vim.api.nvim_buf_get_name(bufnr))
+  local row = vim.api.nvim_win_get_cursor(0)[1]
+
+  -- Find comments for current line
+  local line_comments = state.get_comments_at_location(file, row)
+
+  if #line_comments == 0 then
+    vim.notify("No comment at cursor position", vim.log.levels.WARN)
+    return
+  end
+
+  -- Get unique threads
+  local threads = {}
+  for _, c in ipairs(line_comments) do
+    if c.thread_id then
+      threads[c.thread_id] = true
+    end
+  end
+
+  local thread_count = vim.tbl_count(threads)
+  if thread_count == 0 then
+    vim.notify("No thread found", vim.log.levels.WARN)
+    return
+  elseif thread_count == 1 then
+    local thread_id = next(threads)
+    state.resolve_thread(thread_id)
+  else
+    -- Multiple threads, let user choose
+    vim.notify("Multiple threads at this location", vim.log.levels.WARN)
+  end
+end
+
+--- Set review status
+---@param status string New status
+function M.set_review_status(status)
+  local review = require("code-review.review")
+  review.update_status(status)
 end
 
 --- Delete comment at cursor position

@@ -34,7 +34,7 @@ function M.add(context_lines)
       return
     end
 
-    -- Create comment data
+    -- Always create a new comment (new thread)
     local comment_data = {
       file = context.file,
       line_start = context.line_start,
@@ -48,7 +48,7 @@ function M.add(context_lines)
 
     -- Copy to clipboard if enabled
     local config = require("code-review.config")
-    if config.get("comment.auto_copy_on_add") then
+    if config.get("comment.auto_copy_on_add") and comment_data then
       -- Format the comment with full context (like <leader>rs shows)
       local formatted_lines = M.format_as_markdown(comment_data, true, false)
       local formatted_text = table.concat(formatted_lines, "\n")
@@ -149,26 +149,48 @@ end
 add_virtual_text = function(bufnr, comments)
   local config = require("code-review.config").get("ui.virtual_text")
 
-  -- Group comments by line for virtual text
-  local comments_by_line = {}
+  -- Group comments by line and thread for virtual text
+  local threads_by_line = {}
   for _, comment in ipairs(comments) do
     -- Only show on first line of range
     local line = comment.line_start
-    if not comments_by_line[line] then
-      comments_by_line[line] = {}
+    if not threads_by_line[line] then
+      threads_by_line[line] = {}
     end
-    table.insert(comments_by_line[line], comment)
+
+    -- Group by thread
+    local thread_id = comment.thread_id or comment.id
+    if not threads_by_line[line][thread_id] then
+      threads_by_line[line][thread_id] = {}
+    end
+    table.insert(threads_by_line[line][thread_id], comment)
   end
 
   -- Add virtual text
-  for line, line_comments in pairs(comments_by_line) do
+  for line, line_threads in pairs(threads_by_line) do
     local text = config.prefix
-    if #line_comments > 1 then
-      -- Multiple comments on same line
-      text = text .. string.format("(%d comments)", #line_comments)
+    local thread_count = vim.tbl_count(line_threads)
+
+    if thread_count > 1 then
+      -- Multiple threads on same line
+      text = text .. string.format("(%d threads)", thread_count)
     else
-      -- Single comment - show first line of comment
-      local first_line = line_comments[1].comment:match("^[^\n]*") or line_comments[1].comment
+      -- Single thread - find the latest comment
+      local _, thread_comments = next(line_threads)
+
+      -- Find the latest comment (last in thread)
+      local latest_comment = thread_comments[#thread_comments]
+
+      -- If no timestamp, assume comments are in chronological order
+      if thread_comments[1].timestamp then
+        -- Sort by timestamp to find the latest
+        table.sort(thread_comments, function(a, b)
+          return (a.timestamp or 0) < (b.timestamp or 0)
+        end)
+        latest_comment = thread_comments[#thread_comments]
+      end
+      local first_line = latest_comment.comment:match("^[^\n]*") or latest_comment.comment
+
       -- Truncate if too long
       if #first_line > 40 then
         first_line = first_line:sub(1, 37) .. "..."
