@@ -13,7 +13,7 @@ local function parse_timestamp_from_frontmatter(time_str)
   if not time_str then
     return nil
   end
-  
+
   -- Try to parse "2025-07-08 10:43:54" format
   local year, month, day, hour, min, sec = time_str:match("(%d+)%-(%d+)%-(%d+) (%d+):(%d+):(%d+)")
   if year then
@@ -23,10 +23,10 @@ local function parse_timestamp_from_frontmatter(time_str)
       day = tonumber(day),
       hour = tonumber(hour),
       min = tonumber(min),
-      sec = tonumber(sec)
+      sec = tonumber(sec),
     })
   end
-  
+
   return nil
 end
 
@@ -73,13 +73,11 @@ local function parse_comment_from_file(content, filename)
   local context_lines = {}
   local in_context_code = false
   local comments = {}
-  
+
   -- Variables for parsing multiple comments
   local current_comment = nil
   local current_comment_lines = {}
   local in_comments_section = false
-  local comment_author = nil
-  local comment_timestamp = nil
 
   for _, line in ipairs(lines) do
     if state == "start" and line == "---" then
@@ -124,48 +122,49 @@ local function parse_comment_from_file(content, filename)
           table.insert(comments, current_comment)
           current_comment_lines = {}
         end
-        
+
         -- Parse comment header: "### Author - Timestamp"
         local header = line:sub(5) -- Remove "### "
         local author, timestamp_str = header:match("^(.+) %- (.+)$")
-        comment_author = author or vim.fn.expand("$USER")
-        
+        local parsed_author = author or vim.fn.expand("$USER")
+
         -- Parse timestamp from string (format: "2025-07-08 10:43:54")
+        local parsed_timestamp
         if timestamp_str then
           local year, month, day, hour, min, sec = timestamp_str:match("(%d+)%-(%d+)%-(%d+) (%d+):(%d+):(%d+)")
           if year then
-            comment_timestamp = os.time({
+            parsed_timestamp = os.time({
               year = tonumber(year),
               month = tonumber(month),
               day = tonumber(day),
               hour = tonumber(hour),
               min = tonumber(min),
-              sec = tonumber(sec)
+              sec = tonumber(sec),
             })
           else
-            comment_timestamp = os.time()
+            parsed_timestamp = os.time()
           end
         else
-          comment_timestamp = os.time()
+          parsed_timestamp = os.time()
         end
-        
+
         -- Start new comment
         current_comment = {
           id = base_id .. "_comment_" .. #comments,
           file = frontmatter.file or "",
           line_start = tonumber(frontmatter.line_start) or 0,
           line_end = tonumber(frontmatter.line_end) or 0,
-          author = comment_author,
-          timestamp = comment_timestamp,
+          author = parsed_author,
+          timestamp = parsed_timestamp,
           context_lines = context_lines,
           thread_id = frontmatter.thread_id,
           thread_status = frontmatter.thread_status or "open",
           resolved_by = frontmatter.resolved_by ~= "null" and frontmatter.resolved_by or nil,
           resolved_at = frontmatter.resolved_at ~= "null" and tonumber(frontmatter.resolved_at) or nil,
         }
-      elseif line == "---" and in_comments_section then
+      elseif line == "---" and in_comments_section then -- luacheck: ignore 542
         -- Comment separator, ignore
-      elseif line == "" and not current_comment then
+      elseif line == "" and not current_comment then -- luacheck: ignore 542
         -- Empty line before first comment, ignore
       else
         -- Comment content
@@ -303,14 +302,14 @@ function M.add(comment_data)
     -- Find the root comment of this thread
     local comments = load_comments()
     local root_comment = nil
-    
+
     for _, comment in ipairs(comments) do
       if comment.thread_id == comment_data.thread_id and not comment.parent_id then
         root_comment = comment
         break
       end
     end
-    
+
     if root_comment then
       -- Get all comments in this thread
       local thread_comments = {}
@@ -319,20 +318,20 @@ function M.add(comment_data)
           table.insert(thread_comments, comment)
         end
       end
-      
+
       -- Add the new reply
       table.insert(thread_comments, comment_data)
-      
+
       -- Sort by timestamp to maintain chronological order
       table.sort(thread_comments, function(a, b)
         return (a.timestamp or 0) < (b.timestamp or 0)
       end)
-      
+
       -- Update the root comment file with all thread comments
       local filename = root_comment.id .. ".md"
       local filepath = get_storage_dir() .. "/" .. filename
       local formatted_text = M.format_thread_as_markdown(thread_comments)
-      
+
       if utils.save_to_file(filepath, formatted_text) then
         invalidate_cache()
         return comment_data.id
@@ -488,7 +487,10 @@ function M.format_comment_as_markdown(comment_data)
   -- Comments section (even for single comment, use consistent format)
   table.insert(lines, "## Comments")
   table.insert(lines, "")
-  table.insert(lines, "### " .. (comment_data.author or vim.fn.expand("$USER")) .. " - " .. os.date(date_format, comment_data.timestamp))
+  table.insert(
+    lines,
+    "### " .. (comment_data.author or vim.fn.expand("$USER")) .. " - " .. os.date(date_format, comment_data.timestamp)
+  )
   table.insert(lines, "")
   table.insert(lines, comment_data.comment)
 
@@ -594,47 +596,47 @@ function M.format_thread_as_markdown(thread_comments)
   if #thread_comments == 0 then
     return ""
   end
-  
+
   local lines = {}
   local config = require("code-review.config")
   local date_format = config.get("output.date_format")
-  
+
   -- Find the root comment (should be the first one)
   local root_comment = thread_comments[1]
-  
+
   -- YAML frontmatter from root comment
   table.insert(lines, "---")
   table.insert(lines, "file: " .. root_comment.file)
   table.insert(lines, "line_start: " .. root_comment.line_start)
   table.insert(lines, "line_end: " .. root_comment.line_end)
   table.insert(lines, "time: " .. os.date(date_format, root_comment.timestamp))
-  
+
   if root_comment.author then
     table.insert(lines, "author: " .. root_comment.author)
   end
-  
+
   if root_comment.thread_id then
     table.insert(lines, "thread_id: " .. root_comment.thread_id)
   end
-  
+
   table.insert(lines, "parent_id: null")
   table.insert(lines, "thread_status: " .. (root_comment.thread_status or "open"))
-  
+
   if root_comment.resolved_by then
     table.insert(lines, "resolved_by: " .. root_comment.resolved_by)
   else
     table.insert(lines, "resolved_by: null")
   end
-  
+
   if root_comment.resolved_at then
     table.insert(lines, "resolved_at: " .. root_comment.resolved_at)
   else
     table.insert(lines, "resolved_at: null")
   end
-  
+
   table.insert(lines, "---")
   table.insert(lines, "")
-  
+
   -- Code context (from root comment)
   if root_comment.context_lines and #root_comment.context_lines > 0 then
     table.insert(lines, "## Context")
@@ -646,11 +648,11 @@ function M.format_thread_as_markdown(thread_comments)
     table.insert(lines, "```")
     table.insert(lines, "")
   end
-  
+
   -- Comments section
   table.insert(lines, "## Comments")
   table.insert(lines, "")
-  
+
   -- Add each comment in the thread
   for i, comment in ipairs(thread_comments) do
     if i > 1 then
@@ -658,15 +660,18 @@ function M.format_thread_as_markdown(thread_comments)
       table.insert(lines, "---")
       table.insert(lines, "")
     end
-    
+
     -- Comment metadata
-    table.insert(lines, "### " .. (comment.author or vim.fn.expand("$USER")) .. " - " .. os.date(date_format, comment.timestamp))
+    table.insert(
+      lines,
+      "### " .. (comment.author or vim.fn.expand("$USER")) .. " - " .. os.date(date_format, comment.timestamp)
+    )
     table.insert(lines, "")
-    
+
     -- Comment content
     table.insert(lines, comment.comment)
   end
-  
+
   return table.concat(lines, "\n")
 end
 

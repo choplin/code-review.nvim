@@ -157,7 +157,7 @@ add_virtual_text = function(bufnr, comments)
     if not threads_by_line[line] then
       threads_by_line[line] = {}
     end
-    
+
     -- Group by thread
     local thread_id = comment.thread_id or comment.id
     if not threads_by_line[line][thread_id] then
@@ -170,17 +170,17 @@ add_virtual_text = function(bufnr, comments)
   for line, line_threads in pairs(threads_by_line) do
     local text = config.prefix
     local thread_count = vim.tbl_count(line_threads)
-    
+
     if thread_count > 1 then
       -- Multiple threads on same line
       text = text .. string.format("(%d threads)", thread_count)
     else
       -- Single thread - find the latest comment
-      local thread_id, thread_comments = next(line_threads)
-      
+      local _, thread_comments = next(line_threads)
+
       -- Find the latest comment (last in thread)
       local latest_comment = thread_comments[#thread_comments]
-      
+
       -- If no timestamp, assume comments are in chronological order
       if thread_comments[1].timestamp then
         -- Sort by timestamp to find the latest
@@ -190,7 +190,7 @@ add_virtual_text = function(bufnr, comments)
         latest_comment = thread_comments[#thread_comments]
       end
       local first_line = latest_comment.comment:match("^[^\n]*") or latest_comment.comment
-      
+
       -- Truncate if too long
       if #first_line > 40 then
         first_line = first_line:sub(1, 37) .. "..."

@@ -250,25 +250,25 @@ function M.reply_to_comment_at_cursor()
 
   -- Group comments by thread
   local threads = {}
-  for _, comment in ipairs(line_comments) do
-    local thread_id = comment.thread_id or comment.id
+  for _, c in ipairs(line_comments) do
+    local thread_id = c.thread_id or c.id
     if not threads[thread_id] then
       threads[thread_id] = {
         id = thread_id,
         root_comment = nil,
-        comments = {}
+        comments = {},
       }
     end
-    table.insert(threads[thread_id].comments, comment)
+    table.insert(threads[thread_id].comments, c)
     -- Track root comment
-    if not comment.parent_id then
-      threads[thread_id].root_comment = comment
+    if not c.parent_id then
+      threads[thread_id].root_comment = c
     end
   end
 
   -- Select thread if multiple threads exist
   local thread_count = vim.tbl_count(threads)
-  
+
   if thread_count == 1 then
     -- Single thread case
     local selected_thread = threads[next(threads)]
@@ -298,7 +298,7 @@ function M.reply_to_comment_at_cursor()
       end
       local item = {
         display = string.format("%d. %s (%d comments)", #thread_items + 1, preview, #thread.comments),
-        thread = thread
+        thread = thread,
       }
       table.insert(thread_items, item)
     end
@@ -313,9 +313,9 @@ function M.reply_to_comment_at_cursor()
       if not choice then
         return
       end
-      
-      selected_thread = choice.thread
-      
+
+      local selected_thread = choice.thread
+
       -- Continue with reply process inside callback
       local comment_to_reply = selected_thread.root_comment or selected_thread.comments[1]
 

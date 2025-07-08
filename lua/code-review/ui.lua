@@ -386,7 +386,6 @@ end
 --- Show comment list in floating window
 ---@param comments table[] List of comments to show
 function M.show_comment_list(comments)
-  local comment_module = require("code-review.comment")
   local lines = {}
 
   -- Group comments by thread
@@ -425,8 +424,8 @@ function M.show_comment_list(comments)
       end
 
       -- Comment metadata
-      local config = require("code-review.config")
-      local date_format = config.get("output.date_format")
+      local cfg = require("code-review.config")
+      local date_format = cfg.get("output.date_format")
       table.insert(
         lines,
         "### " .. (comment.author or vim.fn.expand("$USER")) .. " - " .. os.date(date_format, comment.timestamp)
