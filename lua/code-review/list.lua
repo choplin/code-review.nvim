@@ -32,19 +32,56 @@ function M.list_with_quickfix()
     return
   end
 
-  -- Sort by file and line
-  local sorted_comments = vim.deepcopy(comments)
-  table.sort(sorted_comments, function(a, b)
-    if a.file ~= b.file then
-      return a.file < b.file
+  -- Build thread tree
+  local thread = require("code-review.thread")
+  local threads = thread.build_thread_tree(comments)
+
+  -- Get review session for thread status
+  local review_session = state.get_review_session()
+  local thread_statuses = review_session and review_session.threads or {}
+
+  -- Sort threads by file and line
+  local sorted_threads = {}
+  for _, thread_data in pairs(threads) do
+    table.insert(sorted_threads, thread_data)
+  end
+  table.sort(sorted_threads, function(a, b)
+    local a_root = a.root_comment
+    local b_root = b.root_comment
+    if a_root.file ~= b_root.file then
+      return a_root.file < b_root.file
     end
-    return a.line_start < b.line_start
+    return a_root.line_start < b_root.line_start
   end)
 
-  -- Convert to quickfix items
+  -- Convert to quickfix items with thread grouping
   local qf_items = {}
-  for _, comment in ipairs(sorted_comments) do
-    table.insert(qf_items, comment_to_qf_item(comment))
+  for _, thread_data in ipairs(sorted_threads) do
+    local thread_status = thread_statuses[thread_data.id]
+    local status_indicator = ""
+    if thread_status then
+      if thread_status.status == "resolved" then
+        status_indicator = "[✓] "
+      elseif thread_status.status == "outdated" then
+        status_indicator = "[~] "
+      else
+        status_indicator = "[•] "
+      end
+    end
+
+    -- Add root comment with thread indicator
+    local root_item = comment_to_qf_item(thread_data.root_comment)
+    root_item.text = status_indicator .. "THREAD: " .. root_item.text
+    table.insert(qf_items, root_item)
+
+    -- Add replies in linear order
+    if thread_data.replies then
+      for _, reply in ipairs(thread_data.replies) do
+        local reply_item = comment_to_qf_item(reply)
+        reply_item.text = "  └─ " .. reply_item.text
+        table.insert(qf_items, reply_item)
+      end
+    end
   end
 
   -- Set quickfix list

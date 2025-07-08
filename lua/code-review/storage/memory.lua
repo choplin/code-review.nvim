@@ -29,7 +29,11 @@ function M.add(comment_data)
   end
 
   -- Add metadata
-  comment_data.id = vim.fn.localtime() .. "_" .. math.random(1000, 9999)
+  if not comment_data.id then
+    -- Use a more reliable ID generation to avoid collisions
+    local ms = vim.fn.reltimefloat(vim.fn.reltime()) * 1000
+    comment_data.id = string.format("%d_%03d_%04d", vim.fn.localtime(), ms % 1000, math.random(1000, 9999))
+  end
   comment_data.timestamp = comment_data.timestamp or os.time()
 
   table.insert(session.comments, comment_data)
@@ -84,6 +88,74 @@ function M.get_at_location(file, line)
     end
   end
   return results
+end
+
+--- Update thread status by updating comments
+---@param thread_id string Thread ID
+---@param status string New status
+---@param resolved_by string|nil User who resolved
+---@return boolean success
+function M.update_thread_status(thread_id, status, resolved_by)
+  local updated = false
+
+  for _, comment in ipairs(session.comments) do
+    if comment.thread_id == thread_id then
+      comment.thread_status = status
+
+      -- Only update resolved info on root comment
+      if not comment.parent_id then
+        if status == "resolved" and resolved_by then
+          comment.resolved_by = resolved_by
+          comment.resolved_at = os.time()
+        elseif status == "open" then
+          comment.resolved_by = nil
+          comment.resolved_at = nil
+        end
+      end
+
+      updated = true
+    end
+  end
+
+  return updated
+end
+
+--- Get thread by ID from comments
+---@param thread_id string
+---@return table|nil
+function M.get_thread(thread_id)
+  for _, comment in ipairs(session.comments) do
+    if comment.thread_id == thread_id and not comment.parent_id then
+      return {
+        id = thread_id,
+        status = comment.thread_status or "open",
+        root_comment_id = comment.id,
+        resolved_by = comment.resolved_by,
+        resolved_at = comment.resolved_at,
+      }
+    end
+  end
+  return nil
+end
+
+--- Get all threads from comments
+---@return table<string, table>
+function M.get_all_threads()
+  local threads = {}
+
+  for _, comment in ipairs(session.comments) do
+    if comment.thread_id and not comment.parent_id then
+      threads[comment.thread_id] = {
+        id = comment.thread_id,
+        status = comment.thread_status or "open",
+        root_comment_id = comment.id,
+        resolved_by = comment.resolved_by,
+        resolved_at = comment.resolved_at,
+      }
+    end
+  end
+
+  return threads
 end
 
 --- Reset internal state (for testing purposes)

@@ -110,6 +110,16 @@ local defaults = {
       mode = "n",
       key = "<leader>rd",
     },
+    -- Reply to comment at cursor
+    reply_comment = {
+      mode = "n",
+      key = "<leader>rr",
+    },
+    -- Resolve thread at cursor
+    resolve_thread = {
+      mode = "n",
+      key = "<leader>ro",
+    },
   },
   -- Integration settings
   integrations = {

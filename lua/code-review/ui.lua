@@ -2,10 +2,113 @@ local M = {}
 
 local config = require("code-review.config")
 
+--- Show generic input window
+---@param opts table Options: title, on_submit, initial_text
+function M.get_input(opts)
+  opts = opts or {}
+  local conf = config.get("ui.input_window")
+
+  -- Create buffer
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
+  vim.api.nvim_buf_set_option(buf, "filetype", "markdown")
+  vim.api.nvim_buf_set_option(buf, "wrap", true)
+  vim.api.nvim_buf_set_option(buf, "linebreak", true)
+  vim.api.nvim_buf_set_option(buf, "breakindent", true)
+
+  -- Set initial text if provided
+  if opts.initial_text then
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(opts.initial_text, "\n"))
+  end
+
+  -- Calculate window size and position
+  local width = conf.width
+  local height = conf.height or 10
+
+  -- Create window centered
+  local win = vim.api.nvim_open_win(buf, true, {
+    relative = "editor",
+    row = math.floor((vim.o.lines - height) / 2),
+    col = math.floor((vim.o.columns - width) / 2),
+    width = width,
+    height = height,
+    style = "minimal",
+    border = conf.border,
+    title = opts.title or "Input",
+    title_pos = "center",
+  })
+
+  -- Setup keymaps
+  local function submit()
+    -- Leave insert mode before closing
+    if vim.fn.mode() == "i" then
+      vim.cmd("stopinsert")
+    end
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    local text = table.concat(lines, "\n")
+    vim.api.nvim_win_close(win, true)
+    if opts.on_submit then
+      opts.on_submit(text)
+    end
+  end
+
+  local function cancel()
+    -- Leave insert mode before closing
+    if vim.fn.mode() == "i" then
+      vim.cmd("stopinsert")
+    end
+    vim.api.nvim_win_close(win, true)
+    if opts.on_cancel then
+      opts.on_cancel()
+    end
+  end
+
+  -- Buffer-local keymaps
+  vim.keymap.set("n", "<CR>", submit, { buffer = buf, nowait = true })
+  vim.keymap.set("n", "<C-CR>", submit, { buffer = buf, nowait = true })
+  vim.keymap.set("n", "q", cancel, { buffer = buf, nowait = true })
+  vim.keymap.set("n", "<Esc>", cancel, { buffer = buf, nowait = true })
+  vim.keymap.set("i", "<C-CR>", submit, { buffer = buf, nowait = true })
+  vim.keymap.set("i", "<C-c>", cancel, { buffer = buf, nowait = true })
+
+  -- Start in insert mode
+  vim.cmd("startinsert")
+end
+
+--- Select from a list of comments
+---@param comments table[] List of comments
+---@param callback function(comment?) Called with selected comment or nil
+function M.select_comment(comments, callback)
+  if #comments == 0 then
+    callback(nil)
+    return
+  end
+
+  local items = {}
+  for i, comment in ipairs(comments) do
+    local preview = comment.comment:sub(1, 50)
+    if #comment.comment > 50 then
+      preview = preview .. "..."
+    end
+    table.insert(items, string.format("%d. %s", i, preview))
+  end
+
+  vim.ui.select(items, {
+    prompt = "Select comment:",
+  }, function(choice, idx)
+    if choice and idx then
+      callback(comments[idx])
+    else
+      callback(nil)
+    end
+  end)
+end
+
 --- Show comment input window
 ---@param callback function(string?) Called with the comment text or nil if cancelled
 ---@param context table? Optional context with line_start and line_end
-function M.show_comment_input(callback, context)
+---@param title string? Optional window title (defaults to config)
+function M.show_comment_input(callback, context, title)
   local conf = config.get("ui.input_window")
 
   -- Create buffer
@@ -64,7 +167,7 @@ function M.show_comment_input(callback, context)
     height = height,
     style = "minimal",
     border = conf.border,
-    title = conf.title,
+    title = title or conf.title,
     title_pos = conf.title_pos,
   })
 
@@ -286,18 +389,52 @@ function M.show_comment_list(comments)
   local comment_module = require("code-review.comment")
   local lines = {}
 
-  -- Format comments for display
-  for i, comment_data in ipairs(comments) do
-    if i > 1 then
+  -- Group comments by thread
+  local threads = {}
+  for _, comment in ipairs(comments) do
+    local thread_id = comment.thread_id or comment.id
+    if not threads[thread_id] then
+      threads[thread_id] = {}
+    end
+    table.insert(threads[thread_id], comment)
+  end
+
+  -- Sort comments within each thread by timestamp
+  for _, thread_comments in pairs(threads) do
+    table.sort(thread_comments, function(a, b)
+      return (a.timestamp or 0) < (b.timestamp or 0)
+    end)
+  end
+
+  -- Format each thread as in storage format (## Comments section only)
+  local first_thread = true
+  for _, thread_comments in pairs(threads) do
+    if not first_thread then
       table.insert(lines, "")
       table.insert(lines, "---")
       table.insert(lines, "")
     end
+    first_thread = false
 
-    -- Use common formatter (no ANSI for floating window)
-    local comment_lines = comment_module.format_as_markdown(comment_data, true, false)
-    for _, line in ipairs(comment_lines) do
-      table.insert(lines, line)
+    -- Add thread comments in the same format as the file (without ## Comments header)
+    for i, comment in ipairs(thread_comments) do
+      if i > 1 then
+        table.insert(lines, "")
+        table.insert(lines, "---")
+        table.insert(lines, "")
+      end
+
+      -- Comment metadata
+      local config = require("code-review.config")
+      local date_format = config.get("output.date_format")
+      table.insert(
+        lines,
+        "### " .. (comment.author or vim.fn.expand("$USER")) .. " - " .. os.date(date_format, comment.timestamp)
+      )
+      table.insert(lines, "")
+
+      -- Comment content
+      table.insert(lines, comment.comment)
     end
   end
 
