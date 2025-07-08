@@ -404,7 +404,6 @@ This function needs error handling for nil input.
 Consider using table.filter for better readability.
 ````
 
-
 ## 💾 Storage Backends
 
 code-review.nvim supports two storage backends:
@@ -455,7 +454,6 @@ require('code-review').setup({
    - Default: `{project_root}/.code-review/`
 3. Comments persist across Neovim sessions
 4. External tools can monitor the directory for new files
-
 
 ## 🔨 Development
 

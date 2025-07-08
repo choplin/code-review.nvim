@@ -366,7 +366,47 @@ function M.resolve_thread_at_cursor()
     state.resolve_thread(thread_id)
   else
     -- Multiple threads, let user choose
-    vim.notify("Multiple threads at this location", vim.log.levels.WARN)
+    local thread_list = {}
+    local all_threads = state.get_all_threads()
+    
+    for thread_id, _ in pairs(threads) do
+      local thread_data = all_threads[thread_id]
+      if thread_data then
+        -- Get thread comments for preview
+        local thread_comments = state.get_thread_comments(thread_id)
+        local preview = ""
+        if #thread_comments > 0 then
+          preview = thread_comments[1].comment:sub(1, 50)
+          if #thread_comments[1].comment > 50 then
+            preview = preview .. "..."
+          end
+        end
+        
+        table.insert(thread_list, {
+          id = thread_id,
+          display = string.format("[%s] %s (%d comments)", 
+            thread_data.status or "open", 
+            preview, 
+            #thread_comments),
+          thread_data = thread_data
+        })
+      end
+    end
+    
+    -- Sort by thread ID for consistent ordering
+    table.sort(thread_list, function(a, b) return a.id < b.id end)
+    
+    -- Show selection UI
+    vim.ui.select(thread_list, {
+      prompt = "Select thread to resolve:",
+      format_item = function(item)
+        return item.display
+      end,
+    }, function(choice)
+      if choice then
+        state.resolve_thread(choice.id)
+      end
+    end)
   end
 end
 
