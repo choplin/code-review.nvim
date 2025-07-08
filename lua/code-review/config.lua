@@ -6,7 +6,7 @@ local defaults = {
   ui = {
     -- Floating window settings for comment input
     input_window = {
-      width = 60,
+      width = 80,
       height = 1,
       max_height = 20, -- Maximum height when content requires scrolling
       border = "rounded",
@@ -16,10 +16,10 @@ local defaults = {
     -- Preview window settings
     preview = {
       split = "vertical", -- 'vertical' or 'horizontal' or 'float'
-      vertical_width = 80,
+      vertical_width = 100,
       horizontal_height = 20,
       float = {
-        width = 0.8,
+        width = 0.85,
         height = 0.8,
         border = "rounded",
         title = " Review Preview ",

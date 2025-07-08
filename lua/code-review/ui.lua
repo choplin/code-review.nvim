@@ -440,7 +440,7 @@ function M.show_comment_list(comments)
   end
 
   -- Calculate window size
-  local width = 60
+  local width = 80
   local height = math.min(#lines + 2, 20)
 
   -- Create buffer
