@@ -50,10 +50,10 @@ local function parse_filename(filename)
 end
 
 --- Generate filename with status
----@param status string
 ---@param id string
+---@param status string
 ---@return string
-local function make_filename(status, id)
+local function make_filename(id, status)
   return status .. "_" .. id .. ".md"
 end
 
@@ -110,7 +110,7 @@ local function get_comment_filename(comment_data, status)
   
   -- Default status for new comments is "action-required"
   status = status or "action-required"
-  return make_filename(status, id)
+  return make_filename(id, status)
 end
 
 --- Parse comment from file content
@@ -395,7 +395,7 @@ function M.add(comment_data)
       local old_filepath = old_files[1]
       
       -- Generate new filename with updated status
-      local new_filename = make_filename(new_status, root_comment.id)
+      local new_filename = make_filename(root_comment.id, new_status)
       local new_filepath = get_storage_dir() .. "/" .. new_filename
       
       -- Format content
@@ -645,7 +645,7 @@ function M.update_thread_status(thread_id, status, resolved_by)
   end
   
   -- Generate new filename
-  local new_filename = make_filename(filename_status, root_comment.id)
+  local new_filename = make_filename(root_comment.id, filename_status)
   local new_filepath = get_storage_dir() .. "/" .. new_filename
   
   -- Rename file if needed
@@ -762,5 +762,10 @@ function M.format_thread_as_markdown(thread_comments)
 
   return table.concat(lines, "\n")
 end
+
+-- Export internal functions for testing
+M.parse_filename = parse_filename
+M.make_filename = make_filename
+M.determine_thread_status = determine_thread_status
 
 return M
