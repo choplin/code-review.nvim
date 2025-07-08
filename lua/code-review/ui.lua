@@ -432,8 +432,10 @@ function M.show_comment_list(comments)
       )
       table.insert(lines, "")
 
-      -- Comment content
-      table.insert(lines, comment.comment)
+      -- Comment content (split by lines to avoid newline issues)
+      for line in comment.comment:gmatch("[^\n]+") do
+        table.insert(lines, line)
+      end
     end
   end
 
