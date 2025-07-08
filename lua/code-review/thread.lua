@@ -46,7 +46,7 @@ function M.create_reply(parent_comment, reply_text, author)
   return {
     id = reply_id,
     thread_id = parent_comment.thread_id,
-    parent_id = parent_comment.id,
+    parent_id = parent_comment.id, -- Keep for internal use, but not saved to frontmatter
     file = parent_comment.file,
     line_start = parent_comment.line_start,
     line_end = parent_comment.line_end,

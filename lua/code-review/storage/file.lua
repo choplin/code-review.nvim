@@ -30,6 +30,55 @@ local function parse_timestamp_from_frontmatter(time_str)
   return nil
 end
 
+--- Parse status from filename
+---@param filename string
+---@return string status, string id
+local function parse_filename(filename)
+  -- Pattern: status_timestamp_thread.md
+  local status, id = filename:match("^([^_]+)_(.+)%.md$")
+  if status and id then
+    return status, id
+  end
+  
+  -- Legacy format: timestamp_thread.md
+  local legacy_id = filename:match("^(.+)%.md$")
+  if legacy_id then
+    return "action-required", legacy_id
+  end
+  
+  return nil, nil
+end
+
+--- Generate filename with status
+---@param status string
+---@param id string
+---@return string
+local function make_filename(status, id)
+  return status .. "_" .. id .. ".md"
+end
+
+--- Determine thread status based on latest author
+---@param thread_comments table[]
+---@return string status
+local function determine_thread_status(thread_comments)
+  if #thread_comments == 0 then
+    return "action-required"
+  end
+  
+  -- Get the latest comment
+  local latest_comment = thread_comments[#thread_comments]
+  local config = require("code-review.config")
+  local claude_code_author = config.get("comment.claude_code_author")
+  
+  -- If latest author is Claude Code, status is "waiting-review"
+  -- Otherwise, status is "action-required"
+  if latest_comment.author == claude_code_author then
+    return "waiting-review"
+  else
+    return "action-required"
+  end
+end
+
 --- Get storage directory
 ---@return string
 local function get_storage_dir()
@@ -45,15 +94,23 @@ end
 
 --- Generate filename for a comment
 ---@param comment_data table
+---@param status string? Optional status override
 ---@return string
-local function get_comment_filename(comment_data)
+local function get_comment_filename(comment_data, status)
+  local id
   if comment_data.id then
-    -- Use existing ID for filename
-    return comment_data.id .. ".md"
+    -- Extract ID from existing filename if needed
+    local _, parsed_id = parse_filename(comment_data.id .. ".md")
+    id = parsed_id or comment_data.id
   else
-    -- Generate new filename
-    return utils.generate_auto_save_filename()
+    -- Generate new ID
+    local filename = utils.generate_auto_save_filename()
+    id = filename:match("^(.+)%.md$")
   end
+  
+  -- Default status for new comments is "action-required"
+  status = status or "action-required"
+  return make_filename(status, id)
 end
 
 --- Parse comment from file content
@@ -61,10 +118,14 @@ end
 ---@param filename string
 ---@return table[] comments
 local function parse_comment_from_file(content, filename)
-  -- Extract ID from filename
-  local base_id = filename:match("^(.+)%.md$")
+  -- Parse status and ID from filename
+  local status, base_id = parse_filename(filename)
   if not base_id then
-    return {}
+    -- Fallback for legacy format
+    base_id = filename:match("^(.+)%.md$")
+    if not base_id then
+      return {}
+    end
   end
 
   local lines = vim.split(content, "\n", { plain = true })
@@ -158,9 +219,7 @@ local function parse_comment_from_file(content, filename)
           timestamp = parsed_timestamp,
           context_lines = context_lines,
           thread_id = frontmatter.thread_id,
-          thread_status = frontmatter.thread_status or "open",
-          resolved_by = frontmatter.resolved_by ~= "null" and frontmatter.resolved_by or nil,
-          resolved_at = frontmatter.resolved_at ~= "null" and tonumber(frontmatter.resolved_at) or nil,
+          -- Status is now derived from filename
         }
       elseif line == "---" and in_comments_section then -- luacheck: ignore 542
         -- Comment separator, ignore
@@ -187,10 +246,7 @@ local function parse_comment_from_file(content, filename)
         timestamp = parse_timestamp_from_frontmatter(frontmatter.time) or os.time(),
         author = frontmatter.author,
         thread_id = frontmatter.thread_id,
-        parent_id = frontmatter.parent_id ~= "null" and frontmatter.parent_id or nil,
-        thread_status = frontmatter.thread_status or "open",
-        resolved_by = frontmatter.resolved_by ~= "null" and frontmatter.resolved_by or nil,
-        resolved_at = frontmatter.resolved_at ~= "null" and tonumber(frontmatter.resolved_at) or nil,
+        -- Removed: parent_id, thread_status, resolved_by, resolved_at
       }
       return { comment_data }
     else
@@ -307,6 +363,10 @@ function M.add(comment_data)
       if comment.thread_id == comment_data.thread_id and not comment.parent_id then
         root_comment = comment
         break
+      elseif not comment.parent_id and comment.id .. "_thread" == comment_data.thread_id then
+        -- Fallback: check if comment ID + "_thread" matches thread_id
+        root_comment = comment
+        break
       end
     end
 
@@ -327,12 +387,27 @@ function M.add(comment_data)
         return (a.timestamp or 0) < (b.timestamp or 0)
       end)
 
-      -- Update the root comment file with all thread comments
-      local filename = root_comment.id .. ".md"
-      local filepath = get_storage_dir() .. "/" .. filename
+      -- Determine new status based on latest author
+      local new_status = determine_thread_status(thread_comments)
+      
+      -- Get current filename from existing file
+      local old_files = vim.fn.glob(get_storage_dir() .. "/*_" .. root_comment.id .. ".md", false, true)
+      local old_filepath = old_files[1]
+      
+      -- Generate new filename with updated status
+      local new_filename = make_filename(new_status, root_comment.id)
+      local new_filepath = get_storage_dir() .. "/" .. new_filename
+      
+      -- Format content
       local formatted_text = M.format_thread_as_markdown(thread_comments)
-
-      if utils.save_to_file(filepath, formatted_text) then
+      
+      -- If filename needs to change, delete old file first
+      if old_filepath and old_filepath ~= new_filepath then
+        vim.fn.delete(old_filepath)
+      end
+      
+      -- Save to new/same file
+      if utils.save_to_file(new_filepath, formatted_text) then
         invalidate_cache()
         return comment_data.id
       else
@@ -344,7 +419,9 @@ function M.add(comment_data)
   -- For new comments (not replies), create a new file
   local dir = get_storage_dir()
   local filename = get_comment_filename(comment_data)
-  comment_data.id = filename:match("^(.+)%.md$")
+  -- Extract ID without status prefix
+  local _, id = parse_filename(filename)
+  comment_data.id = id or filename:match("^(.+)%.md$")
 
   local filepath = dir .. "/" .. filename
 
@@ -383,10 +460,19 @@ end
 ---@return boolean success
 function M.delete(id)
   local dir = get_storage_dir()
-  local filepath = dir .. "/" .. id .. ".md"
-
-  if vim.fn.filereadable(filepath) == 1 then
-    vim.fn.delete(filepath)
+  
+  -- Find file with any status prefix
+  local files = vim.fn.glob(dir .. "/*_" .. id .. ".md", false, true)
+  if #files > 0 then
+    vim.fn.delete(files[1])
+    invalidate_cache()
+    return true
+  end
+  
+  -- Fallback for legacy format
+  local legacy_filepath = dir .. "/" .. id .. ".md"
+  if vim.fn.filereadable(legacy_filepath) == 1 then
+    vim.fn.delete(legacy_filepath)
     invalidate_cache()
     return true
   end
@@ -445,29 +531,9 @@ function M.format_comment_as_markdown(comment_data)
   if comment_data.thread_id then
     table.insert(lines, "thread_id: " .. comment_data.thread_id)
   end
-
-  if comment_data.parent_id then
-    table.insert(lines, "parent_id: " .. comment_data.parent_id)
-  else
-    table.insert(lines, "parent_id: null")
-  end
-
-  -- Thread status (only for root comments)
-  if comment_data.thread_id and not comment_data.parent_id then
-    table.insert(lines, "thread_status: " .. (comment_data.thread_status or "open"))
-
-    if comment_data.resolved_by then
-      table.insert(lines, "resolved_by: " .. comment_data.resolved_by)
-    else
-      table.insert(lines, "resolved_by: null")
-    end
-
-    if comment_data.resolved_at then
-      table.insert(lines, "resolved_at: " .. comment_data.resolved_at)
-    else
-      table.insert(lines, "resolved_at: null")
-    end
-  end
+  
+  -- Removed: parent_id, thread_status, resolved_by, resolved_at
+  -- Status is now derived from filename
 
   table.insert(lines, "---")
   table.insert(lines, "")
@@ -505,13 +571,23 @@ function M.get_thread(thread_id)
 
   -- Find the root comment of this thread
   for _, comment in ipairs(comments) do
-    if comment.thread_id == thread_id and not comment.parent_id then
+    if comment.thread_id == thread_id and (not comment.parent_id or comment.id == thread_id:match("^(.+)_thread$")) then
+      -- Find the file to get status
+      local files = vim.fn.glob(get_storage_dir() .. "/*_" .. comment.id .. ".md", false, true)
+      local status = "action-required"
+      
+      if files[1] then
+        local filename = vim.fn.fnamemodify(files[1], ":t")
+        local parsed_status = parse_filename(filename)
+        if parsed_status then
+          status = parsed_status
+        end
+      end
+      
       return {
         id = thread_id,
-        status = comment.thread_status or "open",
+        status = status,
         root_comment_id = comment.id,
-        resolved_by = comment.resolved_by,
-        resolved_at = comment.resolved_at,
       }
     end
   end
@@ -524,47 +600,61 @@ function M.reload()
   invalidate_cache()
 end
 
---- Update thread status by updating all comments in the thread
+--- Update thread status by renaming the file
 ---@param thread_id string Thread ID
----@param status string New status
----@param resolved_by string|nil User who resolved
+---@param status string New status ("resolved", "open", etc.)
+---@param resolved_by string|nil User who resolved (unused now)
 ---@return boolean success
 function M.update_thread_status(thread_id, status, resolved_by)
   local comments = load_comments()
-  local updated = false
-
-  -- Update all comments in this thread
+  
+  -- Find root comment of this thread
+  local root_comment = nil
+  local thread_comments = {}
+  
   for _, comment in ipairs(comments) do
     if comment.thread_id == thread_id then
-      comment.thread_status = status
-
-      -- Only update resolved info on root comment
-      if not comment.parent_id then
-        if status == "resolved" and resolved_by then
-          comment.resolved_by = resolved_by
-          comment.resolved_at = os.time()
-        elseif status == "open" then
-          comment.resolved_by = nil
-          comment.resolved_at = nil
-        end
-      end
-
-      -- Save updated comment
-      local filename = comment.id .. ".md"
-      local filepath = get_storage_dir() .. "/" .. filename
-      local formatted_text = M.format_comment_as_markdown(comment)
-
-      if utils.save_to_file(filepath, formatted_text) then
-        updated = true
+      table.insert(thread_comments, comment)
+      if not root_comment or not comment.parent_id then
+        root_comment = comment
       end
     end
   end
-
-  if updated then
+  
+  if not root_comment then
+    return false
+  end
+  
+  -- Map generic status to filename status
+  local filename_status
+  if status == "resolved" then
+    filename_status = "resolved"
+  elseif status == "open" then
+    -- Determine based on latest author
+    filename_status = determine_thread_status(thread_comments)
+  else
+    filename_status = status
+  end
+  
+  -- Find current file
+  local old_files = vim.fn.glob(get_storage_dir() .. "/*_" .. root_comment.id .. ".md", false, true)
+  local old_filepath = old_files[1]
+  
+  if not old_filepath then
+    return false
+  end
+  
+  -- Generate new filename
+  local new_filename = make_filename(filename_status, root_comment.id)
+  local new_filepath = get_storage_dir() .. "/" .. new_filename
+  
+  -- Rename file if needed
+  if old_filepath ~= new_filepath then
+    vim.fn.rename(old_filepath, new_filepath)
     invalidate_cache()
   end
-
-  return updated
+  
+  return true
 end
 
 --- Get all threads by extracting from comments
@@ -572,16 +662,26 @@ end
 function M.get_all_threads()
   local comments = load_comments()
   local threads = {}
+  local thread_files = {}
+
+  -- First, map files to thread IDs
+  local files = vim.fn.glob(get_storage_dir() .. "/*.md", false, true)
+  for _, filepath in ipairs(files) do
+    local filename = vim.fn.fnamemodify(filepath, ":t")
+    local status, id = parse_filename(filename)
+    if status and id then
+      thread_files[id] = status
+    end
+  end
 
   -- Extract thread info from root comments
   for _, comment in ipairs(comments) do
-    if comment.thread_id and not comment.parent_id then
+    if comment.thread_id and (not comment.parent_id or comment.id == comment.thread_id:match("^(.+)_thread$")) then
+      local status = thread_files[comment.id] or "action-required"
       threads[comment.thread_id] = {
         id = comment.thread_id,
-        status = comment.thread_status or "open",
+        status = status,
         root_comment_id = comment.id,
-        resolved_by = comment.resolved_by,
-        resolved_at = comment.resolved_at,
       }
     end
   end
@@ -618,21 +718,9 @@ function M.format_thread_as_markdown(thread_comments)
   if root_comment.thread_id then
     table.insert(lines, "thread_id: " .. root_comment.thread_id)
   end
-
-  table.insert(lines, "parent_id: null")
-  table.insert(lines, "thread_status: " .. (root_comment.thread_status or "open"))
-
-  if root_comment.resolved_by then
-    table.insert(lines, "resolved_by: " .. root_comment.resolved_by)
-  else
-    table.insert(lines, "resolved_by: null")
-  end
-
-  if root_comment.resolved_at then
-    table.insert(lines, "resolved_at: " .. root_comment.resolved_at)
-  else
-    table.insert(lines, "resolved_at: null")
-  end
+  
+  -- Removed: parent_id, thread_status, resolved_by, resolved_at
+  -- Status is now derived from filename
 
   table.insert(lines, "---")
   table.insert(lines, "")

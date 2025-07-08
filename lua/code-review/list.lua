@@ -36,9 +36,8 @@ function M.list_with_quickfix()
   local thread = require("code-review.thread")
   local threads = thread.build_thread_tree(comments)
 
-  -- Get review session for thread status
-  local review_session = state.get_review_session()
-  local thread_statuses = review_session and review_session.threads or {}
+  -- Get thread statuses from storage
+  local all_threads = state.get_all_threads()
 
   -- Sort threads by file and line
   local sorted_threads = {}
@@ -57,13 +56,16 @@ function M.list_with_quickfix()
   -- Convert to quickfix items with thread grouping
   local qf_items = {}
   for _, thread_data in ipairs(sorted_threads) do
-    local thread_status = thread_statuses[thread_data.id]
+    local thread_info = all_threads[thread_data.id]
     local status_indicator = ""
-    if thread_status then
-      if thread_status.status == "resolved" then
+    
+    if thread_info then
+      if thread_info.status == "resolved" then
         status_indicator = "[✓] "
-      elseif thread_status.status == "outdated" then
-        status_indicator = "[~] "
+      elseif thread_info.status == "waiting-review" then
+        status_indicator = "[⏳] "
+      elseif thread_info.status == "action-required" then
+        status_indicator = "[!] "
       else
         status_indicator = "[•] "
       end

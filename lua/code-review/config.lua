@@ -67,6 +67,10 @@ local defaults = {
     },
     -- Automatically copy each new comment to clipboard when added
     auto_copy_on_add = false,
+    -- Author name used by Claude Code (for automatic status management)
+    -- Comments from this author trigger "waiting-review" status
+    -- Comments from other authors trigger "action-required" status
+    claude_code_author = "Claude Code",
   },
   -- Keymaps (set to false to disable all keymaps)
   keymaps = {
