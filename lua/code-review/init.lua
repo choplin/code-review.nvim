@@ -13,6 +13,11 @@ function M.setup(opts)
   config.setup(opts or {})
   state.init()
 
+  -- Define highlight groups for different statuses
+  vim.api.nvim_set_hl(0, "CodeReviewWaitingReview", { fg = "#50fa7b", default = true }) -- Green (informative)
+  vim.api.nvim_set_hl(0, "CodeReviewActionRequired", { fg = "#6c7086", default = true }) -- Light gray (pending)
+  vim.api.nvim_set_hl(0, "CodeReviewResolved", { fg = "#44475a", default = true }) -- Dark gray (resolved)
+
   -- Create commands
   vim.api.nvim_create_user_command("CodeReviewClear", function()
     M.clear()

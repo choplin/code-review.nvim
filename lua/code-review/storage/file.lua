@@ -154,18 +154,15 @@ local function parse_comment_from_file(content, filename)
     elseif state == "content" then
       if line == "## Context" then
         state = "context"
-      elseif line == "## Comment" then
-        -- Old single-comment format
-        state = "comment"
       elseif line == "## Comments" then
-        -- New multi-comment format
+        -- Multi-comment format
         state = "comments"
         in_comments_section = true
       end
     elseif state == "context" then
-      if line == "## Comment" or line == "## Comments" then
-        state = line == "## Comment" and "comment" or "comments"
-        in_comments_section = line == "## Comments"
+      if line == "## Comments" or line == "## Comment Thread" then
+        state = "comments"
+        in_comments_section = true
       elseif line:match("^```") then
         in_context_code = not in_context_code
       elseif in_context_code then
@@ -219,7 +216,7 @@ local function parse_comment_from_file(content, filename)
           timestamp = parsed_timestamp,
           context_lines = context_lines,
           thread_id = frontmatter.thread_id,
-          -- Status is now derived from filename
+          thread_status = status,  -- Add status from filename
         }
       elseif line == "---" and in_comments_section then -- luacheck: ignore 542
         -- Comment separator, ignore
@@ -232,28 +229,11 @@ local function parse_comment_from_file(content, filename)
     end
   end
 
-  -- Handle last comment or old format
-  if state == "comment" or (current_comment and #current_comment_lines > 0) then
-    if state == "comment" then
-      -- Old single-comment format
-      local comment_data = {
-        id = base_id,
-        file = frontmatter.file or "",
-        line_start = tonumber(frontmatter.line_start) or 0,
-        line_end = tonumber(frontmatter.line_end) or 0,
-        comment = table.concat(current_comment_lines, "\n"),
-        context_lines = context_lines,
-        timestamp = parse_timestamp_from_frontmatter(frontmatter.time) or os.time(),
-        author = frontmatter.author,
-        thread_id = frontmatter.thread_id,
-        -- Removed: parent_id, thread_status, resolved_by, resolved_at
-      }
-      return { comment_data }
-    else
-      -- Save last comment in multi-comment format
-      current_comment.comment = vim.trim(table.concat(current_comment_lines, "\n"))
-      table.insert(comments, current_comment)
-    end
+  -- Handle last comment
+  if current_comment and #current_comment_lines > 0 then
+    -- Save last comment in multi-comment format
+    current_comment.comment = vim.trim(table.concat(current_comment_lines, "\n"))
+    table.insert(comments, current_comment)
   end
 
   -- For multi-comment format, ensure root comment has correct ID
