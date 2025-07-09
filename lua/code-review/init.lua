@@ -243,7 +243,7 @@ function M.show_comment_at_cursor()
   end
 
   local thread_count = vim.tbl_count(threads)
-  
+
   if thread_count == 0 then
     -- No threads, show all comments
     ui.show_comment_list(line_comments)
@@ -256,7 +256,7 @@ function M.show_comment_at_cursor()
     -- Multiple threads, let user choose
     local thread_list = {}
     local all_threads = state.get_all_threads()
-    
+
     for thread_id, comments in pairs(threads) do
       local thread_data = all_threads[thread_id]
       local thread_comments = state.get_thread_comments(thread_id)
@@ -267,20 +267,24 @@ function M.show_comment_at_cursor()
           preview = preview .. "..."
         end
       end
-      
+
       table.insert(thread_list, {
         id = thread_id,
-        display = string.format("[%s] %s (%d comments)", 
-          thread_data and thread_data.status or "open", 
-          preview, 
-          #thread_comments),
-        thread_id = thread_id
+        display = string.format(
+          "[%s] %s (%d comments)",
+          thread_data and thread_data.status or "open",
+          preview,
+          #thread_comments
+        ),
+        thread_id = thread_id,
       })
     end
-    
+
     -- Sort by thread ID for consistent ordering
-    table.sort(thread_list, function(a, b) return a.id < b.id end)
-    
+    table.sort(thread_list, function(a, b)
+      return a.id < b.id
+    end)
+
     -- Show selection UI
     vim.ui.select(thread_list, {
       prompt = "Select thread to view:",
@@ -435,7 +439,7 @@ function M.resolve_thread_at_cursor()
     -- Multiple threads, let user choose
     local thread_list = {}
     local all_threads = state.get_all_threads()
-    
+
     for thread_id, _ in pairs(threads) do
       local thread_data = all_threads[thread_id]
       if thread_data then
@@ -448,21 +452,20 @@ function M.resolve_thread_at_cursor()
             preview = preview .. "..."
           end
         end
-        
+
         table.insert(thread_list, {
           id = thread_id,
-          display = string.format("[%s] %s (%d comments)", 
-            thread_data.status or "open", 
-            preview, 
-            #thread_comments),
-          thread_data = thread_data
+          display = string.format("[%s] %s (%d comments)", thread_data.status or "open", preview, #thread_comments),
+          thread_data = thread_data,
         })
       end
     end
-    
+
     -- Sort by thread ID for consistent ordering
-    table.sort(thread_list, function(a, b) return a.id < b.id end)
-    
+    table.sort(thread_list, function(a, b)
+      return a.id < b.id
+    end)
+
     -- Show selection UI
     vim.ui.select(thread_list, {
       prompt = "Select thread to resolve:",

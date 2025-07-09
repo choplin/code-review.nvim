@@ -126,7 +126,7 @@ end
 ---@param comments table[]
 add_signs = function(bufnr, comments)
   local config = require("code-review.config").get("ui.signs")
-  
+
   -- Remove existing signs first
   vim.fn.sign_unplace("CodeReviewSigns", { buffer = bufnr })
 
@@ -137,21 +137,21 @@ add_signs = function(bufnr, comments)
     linehl = config.linehl,
     numhl = config.numhl,
   })
-  
+
   vim.fn.sign_define("CodeReviewActionRequired", {
     text = config.text,
     texthl = "CodeReviewActionRequired",
     linehl = config.linehl,
     numhl = config.numhl,
   })
-  
+
   vim.fn.sign_define("CodeReviewResolved", {
     text = config.text,
     texthl = "CodeReviewResolved",
     linehl = config.linehl,
     numhl = config.numhl,
   })
-  
+
   -- Default sign for unknown status
   vim.fn.sign_define("CodeReviewComment", {
     text = config.text,
@@ -166,7 +166,7 @@ add_signs = function(bufnr, comments)
     for line = comment.line_start, comment.line_end do
       -- Determine status based on thread_status or thread info
       local status = comment.thread_status or "open"
-      
+
       -- If resolved thread, mark as resolved
       if comment.thread_id then
         local state = require("code-review.state")
@@ -196,7 +196,7 @@ add_signs = function(bufnr, comments)
     elseif status == "resolved" then
       sign_name = "CodeReviewResolved"
     end
-    
+
     vim.fn.sign_place(0, "CodeReviewSigns", sign_name, bufnr, { lnum = line, priority = 100 })
   end
 end
@@ -237,19 +237,19 @@ add_virtual_text = function(bufnr, comments)
     else
       -- Single thread - find the latest comment
       local thread_id, thread_comments = next(line_threads)
-      
+
       -- Determine thread status
       local status = "open"
       if thread_comments[1].thread_status then
         status = thread_comments[1].thread_status
       end
-      
+
       -- Check if thread is resolved
       local state = require("code-review.state")
       local thread_data = state.get_all_threads()[thread_id]
       if thread_data and thread_data.status == "resolved" then
         status = "resolved"
-        show_virt_text = false  -- Don't show virtual text for resolved
+        show_virt_text = false -- Don't show virtual text for resolved
       end
 
       if show_virt_text then
@@ -264,17 +264,17 @@ add_virtual_text = function(bufnr, comments)
           end)
           latest_comment = thread_comments[#thread_comments]
         end
-        
+
         -- Set prefix based on status
         local prefix = config.prefix
         if status == "waiting-review" then
-          prefix = "󰇮 "  -- Mail icon for waiting review (Nerd Font)
+          prefix = "󰇮 " -- Mail icon for waiting review (Nerd Font)
           highlight = "CodeReviewWaitingReview"
         elseif status == "action-required" then
           prefix = "○ "
           highlight = "CodeReviewActionRequired"
         end
-        
+
         local first_line = latest_comment.comment:match("^[^\n]*") or latest_comment.comment
 
         -- Truncate if too long

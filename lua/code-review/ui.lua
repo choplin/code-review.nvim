@@ -479,7 +479,7 @@ function M.show_comment_list(comments)
     title = " Review Comments ",
     title_pos = "center",
   })
-  
+
   -- Enable word wrap in the floating window
   vim.api.nvim_win_set_option(win, "wrap", true)
   vim.api.nvim_win_set_option(win, "linebreak", true)

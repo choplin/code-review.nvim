@@ -39,13 +39,13 @@ local function parse_filename(filename)
   if status and id then
     return status, id
   end
-  
+
   -- Legacy format: timestamp_thread.md
   local legacy_id = filename:match("^(.+)%.md$")
   if legacy_id then
     return "action-required", legacy_id
   end
-  
+
   return nil, nil
 end
 
@@ -64,12 +64,12 @@ local function determine_thread_status(thread_comments)
   if #thread_comments == 0 then
     return "action-required"
   end
-  
+
   -- Get the latest comment
   local latest_comment = thread_comments[#thread_comments]
   local config = require("code-review.config")
   local claude_code_author = config.get("comment.claude_code_author")
-  
+
   -- If latest author is Claude Code, status is "waiting-review"
   -- Otherwise, status is "action-required"
   if latest_comment.author == claude_code_author then
@@ -107,7 +107,7 @@ local function get_comment_filename(comment_data, status)
     local filename = utils.generate_auto_save_filename()
     id = filename:match("^(.+)%.md$")
   end
-  
+
   -- Default status for new comments is "action-required"
   status = status or "action-required"
   return make_filename(id, status)
@@ -216,7 +216,7 @@ local function parse_comment_from_file(content, filename)
           timestamp = parsed_timestamp,
           context_lines = context_lines,
           thread_id = frontmatter.thread_id,
-          thread_status = status,  -- Add status from filename
+          thread_status = status, -- Add status from filename
         }
       elseif line == "---" and in_comments_section then -- luacheck: ignore 542
         -- Comment separator, ignore
@@ -369,23 +369,23 @@ function M.add(comment_data)
 
       -- Determine new status based on latest author
       local new_status = determine_thread_status(thread_comments)
-      
+
       -- Get current filename from existing file
       local old_files = vim.fn.glob(get_storage_dir() .. "/*_" .. root_comment.id .. ".md", false, true)
       local old_filepath = old_files[1]
-      
+
       -- Generate new filename with updated status
       local new_filename = make_filename(root_comment.id, new_status)
       local new_filepath = get_storage_dir() .. "/" .. new_filename
-      
+
       -- Format content
       local formatted_text = M.format_thread_as_markdown(thread_comments)
-      
+
       -- If filename needs to change, delete old file first
       if old_filepath and old_filepath ~= new_filepath then
         vim.fn.delete(old_filepath)
       end
-      
+
       -- Save to new/same file
       if utils.save_to_file(new_filepath, formatted_text) then
         invalidate_cache()
@@ -440,7 +440,7 @@ end
 ---@return boolean success
 function M.delete(id)
   local dir = get_storage_dir()
-  
+
   -- Find file with any status prefix
   local files = vim.fn.glob(dir .. "/*_" .. id .. ".md", false, true)
   if #files > 0 then
@@ -448,7 +448,7 @@ function M.delete(id)
     invalidate_cache()
     return true
   end
-  
+
   -- Fallback for legacy format
   local legacy_filepath = dir .. "/" .. id .. ".md"
   if vim.fn.filereadable(legacy_filepath) == 1 then
@@ -511,7 +511,7 @@ function M.format_comment_as_markdown(comment_data)
   if comment_data.thread_id then
     table.insert(lines, "thread_id: " .. comment_data.thread_id)
   end
-  
+
   -- Removed: parent_id, thread_status, resolved_by, resolved_at
   -- Status is now derived from filename
 
@@ -555,7 +555,7 @@ function M.get_thread(thread_id)
       -- Find the file to get status
       local files = vim.fn.glob(get_storage_dir() .. "/*_" .. comment.id .. ".md", false, true)
       local status = "action-required"
-      
+
       if files[1] then
         local filename = vim.fn.fnamemodify(files[1], ":t")
         local parsed_status = parse_filename(filename)
@@ -563,7 +563,7 @@ function M.get_thread(thread_id)
           status = parsed_status
         end
       end
-      
+
       return {
         id = thread_id,
         status = status,
@@ -587,11 +587,11 @@ end
 ---@return boolean success
 function M.update_thread_status(thread_id, status, resolved_by)
   local comments = load_comments()
-  
+
   -- Find root comment of this thread
   local root_comment = nil
   local thread_comments = {}
-  
+
   for _, comment in ipairs(comments) do
     if comment.thread_id == thread_id then
       table.insert(thread_comments, comment)
@@ -600,11 +600,11 @@ function M.update_thread_status(thread_id, status, resolved_by)
       end
     end
   end
-  
+
   if not root_comment then
     return false
   end
-  
+
   -- Map generic status to filename status
   local filename_status
   if status == "resolved" then
@@ -615,25 +615,25 @@ function M.update_thread_status(thread_id, status, resolved_by)
   else
     filename_status = status
   end
-  
+
   -- Find current file
   local old_files = vim.fn.glob(get_storage_dir() .. "/*_" .. root_comment.id .. ".md", false, true)
   local old_filepath = old_files[1]
-  
+
   if not old_filepath then
     return false
   end
-  
+
   -- Generate new filename
   local new_filename = make_filename(root_comment.id, filename_status)
   local new_filepath = get_storage_dir() .. "/" .. new_filename
-  
+
   -- Rename file if needed
   if old_filepath ~= new_filepath then
     vim.fn.rename(old_filepath, new_filepath)
     invalidate_cache()
   end
-  
+
   return true
 end
 
@@ -698,7 +698,7 @@ function M.format_thread_as_markdown(thread_comments)
   if root_comment.thread_id then
     table.insert(lines, "thread_id: " .. root_comment.thread_id)
   end
-  
+
   -- Removed: parent_id, thread_status, resolved_by, resolved_at
   -- Status is now derived from filename
 

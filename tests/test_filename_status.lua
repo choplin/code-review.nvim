@@ -36,7 +36,7 @@ T["filename status management"] = MiniTest.new_set({
       state._reset()
       state.init()
       state.clear()
-      
+
       -- Clean up any test files
       vim.fn.system("rm -rf .code-review/test_*")
     end,
@@ -127,19 +127,19 @@ T["filename status management"]["determine_thread_status returns correct status"
   -- Test status determination based on author
   local test_cases = {
     {
-      comments = {{ author = "Claude Code", comment = "Test", time = os.time() }},
+      comments = { { author = "Claude Code", comment = "Test", time = os.time() } },
       expected = "waiting-review",
       description = "Claude Code as latest author should result in waiting-review",
     },
     {
-      comments = {{ author = "User", comment = "Test", time = os.time() }},
+      comments = { { author = "User", comment = "Test", time = os.time() } },
       expected = "action-required",
       description = "Non-Claude Code author should result in action-required",
     },
     {
       comments = {
         { author = "User", comment = "Initial", time = os.time() - 100 },
-        { author = "Claude Code", comment = "Reply", time = os.time() }
+        { author = "Claude Code", comment = "Reply", time = os.time() },
       },
       expected = "waiting-review",
       description = "Claude Code as latest reply should result in waiting-review",
@@ -147,7 +147,7 @@ T["filename status management"]["determine_thread_status returns correct status"
     {
       comments = {
         { author = "Claude Code", comment = "Initial", time = os.time() - 100 },
-        { author = "User", comment = "Reply", time = os.time() }
+        { author = "User", comment = "Reply", time = os.time() },
       },
       expected = "action-required",
       description = "User as latest reply should result in action-required",
@@ -289,7 +289,7 @@ T["filename status management"]["status preserved in list view"] = function()
 
   -- Get all comments
   local comments = state.get_comments()
-  
+
   -- Find our test comments
   local comment1, comment2
   for _, c in ipairs(comments) do
