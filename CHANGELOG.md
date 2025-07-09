@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Filename-based thread status management system (#14)
+  - Comment files now use status prefixes: `action-required_*.md`, `waiting-review_*.md`, `resolved_*.md`
+  - Status automatically updates when replying to threads
+  - Status-specific colors and icons in UI
+
 ## [0.4.0] - 2025-07-07
 
 ### Added
