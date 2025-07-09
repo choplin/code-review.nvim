@@ -432,13 +432,15 @@ function M.show_comment_list(comments)
       )
       table.insert(lines, "")
 
-      -- Comment content
-      table.insert(lines, comment.comment)
+      -- Comment content (split by lines to avoid newline issues)
+      for line in comment.comment:gmatch("[^\n]+") do
+        table.insert(lines, line)
+      end
     end
   end
 
   -- Calculate window size
-  local width = 60
+  local width = 80
   local height = math.min(#lines + 2, 20)
 
   -- Create buffer
@@ -466,7 +468,7 @@ function M.show_comment_list(comments)
   end
 
   -- Create window
-  vim.api.nvim_open_win(buf, true, {
+  local win = vim.api.nvim_open_win(buf, true, {
     relative = "cursor",
     row = row_offset,
     col = 0,
@@ -477,6 +479,10 @@ function M.show_comment_list(comments)
     title = " Review Comments ",
     title_pos = "center",
   })
+
+  -- Enable word wrap in the floating window
+  vim.api.nvim_win_set_option(win, "wrap", true)
+  vim.api.nvim_win_set_option(win, "linebreak", true)
 
   -- Setup keymaps
   vim.api.nvim_buf_set_keymap(buf, "n", "q", "<cmd>close<CR>", {

@@ -76,7 +76,7 @@ function M.add_comment(comment_data)
   -- Add comment to storage (this will generate the real ID)
   local id = storage_backend.add(comment_data)
 
-  -- For root comments, set thread_id and thread_status
+  -- For root comments, set thread_id
   if not comment_data.parent_id then
     local thread_id = id .. "_thread"
 
@@ -84,7 +84,7 @@ function M.add_comment(comment_data)
     local comment = storage_backend.get(id)
     if comment then
       comment.thread_id = thread_id
-      comment.thread_status = "open"
+      -- Status is now managed by filename, not in data
 
       -- Re-save with thread info
       storage_backend.delete(id)

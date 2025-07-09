@@ -145,6 +145,10 @@ require('code-review').setup({
       },
     },
     auto_copy_on_add = false, -- Automatically copy each new comment to clipboard when added
+    -- Author name used by Claude Code (for automatic status management)
+    -- Comments from this author trigger "waiting-review" status
+    -- Comments from other authors trigger "action-required" status
+    claude_code_author = 'Claude Code',
   },
   -- Keymaps (set to false to disable all keymaps)
   keymaps = {
@@ -312,10 +316,23 @@ The preview buffer is fully editable. You can:
 
 Comments automatically create discussion threads. You can:
 
-- **Reply to comments**: Add comments on the same line to create a thread
-- **Resolve threads**: Use `:CodeReviewResolveThread` when discussion is complete
-- **Reopen threads**: Use `:CodeReviewReopenThread` if more discussion is needed
-- Thread status is displayed in the preview (`[open]` or `[resolved]`)
+- **Reply to comments**: Use `<leader>rr` to reply to existing comments
+- **Create new threads**: Use `<leader>rc` to start a new thread on the same line
+- **Resolve threads**: Use `<leader>ro` to mark a thread as resolved
+- Thread status is displayed in the comment list:
+  - `[!]` Action Required - awaiting response from code author (Claude Code)
+  - `[⏳]` Waiting Review - awaiting reviewer response
+  - `[✓]` Resolved - discussion complete
+
+#### Automatic Status Management
+
+When using file storage backend, thread status is automatically managed based on the latest comment author:
+
+- Comments from `claude_code_author` (configurable) → `waiting-review`
+- Comments from other authors → `action-required`
+- Manual resolution → `resolved`
+
+This enables efficient workflow between AI assistants and human reviewers.
 
 ### Comment List Picker
 
@@ -387,7 +404,6 @@ This function needs error handling for nil input.
 Consider using table.filter for better readability.
 ````
 
-
 ## 💾 Storage Backends
 
 code-review.nvim supports two storage backends:
@@ -438,7 +454,6 @@ require('code-review').setup({
    - Default: `{project_root}/.code-review/`
 3. Comments persist across Neovim sessions
 4. External tools can monitor the directory for new files
-
 
 ## 🔨 Development
 

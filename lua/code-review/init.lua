@@ -13,6 +13,11 @@ function M.setup(opts)
   config.setup(opts or {})
   state.init()
 
+  -- Define highlight groups for different statuses
+  vim.api.nvim_set_hl(0, "CodeReviewWaitingReview", { fg = "#50fa7b", default = true }) -- Green (informative)
+  vim.api.nvim_set_hl(0, "CodeReviewActionRequired", { fg = "#6c7086", default = true }) -- Light gray (pending)
+  vim.api.nvim_set_hl(0, "CodeReviewResolved", { fg = "#44475a", default = true }) -- Dark gray (resolved)
+
   -- Create commands
   vim.api.nvim_create_user_command("CodeReviewClear", function()
     M.clear()
@@ -225,13 +230,79 @@ function M.show_comment_at_cursor()
     return
   end
 
-  -- Show comments in floating window
-  ui.show_comment_list(line_comments)
+  -- Group comments by thread
+  local threads = {}
+  for _, line_comment in ipairs(line_comments) do
+    local thread_id = line_comment.thread_id
+    if thread_id then
+      if not threads[thread_id] then
+        threads[thread_id] = {}
+      end
+      table.insert(threads[thread_id], line_comment)
+    end
+  end
+
+  local thread_count = vim.tbl_count(threads)
+
+  if thread_count == 0 then
+    -- No threads, show all comments
+    ui.show_comment_list(line_comments)
+  elseif thread_count == 1 then
+    -- Single thread, show all its comments
+    local thread_id = next(threads)
+    local thread_comments = state.get_thread_comments(thread_id)
+    ui.show_comment_list(thread_comments)
+  else
+    -- Multiple threads, let user choose
+    local thread_list = {}
+    local all_threads = state.get_all_threads()
+
+    for thread_id, _ in pairs(threads) do
+      local thread_data = all_threads[thread_id]
+      local thread_comments = state.get_thread_comments(thread_id)
+      local preview = ""
+      if #thread_comments > 0 then
+        preview = thread_comments[1].comment:sub(1, 50)
+        if #thread_comments[1].comment > 50 then
+          preview = preview .. "..."
+        end
+      end
+
+      table.insert(thread_list, {
+        id = thread_id,
+        display = string.format(
+          "[%s] %s (%d comments)",
+          thread_data and thread_data.status or "open",
+          preview,
+          #thread_comments
+        ),
+        thread_id = thread_id,
+      })
+    end
+
+    -- Sort by thread ID for consistent ordering
+    table.sort(thread_list, function(a, b)
+      return a.id < b.id
+    end)
+
+    -- Show selection UI
+    vim.ui.select(thread_list, {
+      prompt = "Select thread to view:",
+      format_item = function(item)
+        return item.display
+      end,
+    }, function(choice)
+      if choice then
+        local thread_comments = state.get_thread_comments(choice.thread_id)
+        ui.show_comment_list(thread_comments)
+      end
+    end)
+  end
 end
 
 --- List all comments
 function M.list_comments()
-  require("code-review.list").list_comments()
+  require("code-review.list").list_threads()
 end
 
 --- Reply to comment at cursor position
@@ -366,7 +437,46 @@ function M.resolve_thread_at_cursor()
     state.resolve_thread(thread_id)
   else
     -- Multiple threads, let user choose
-    vim.notify("Multiple threads at this location", vim.log.levels.WARN)
+    local thread_list = {}
+    local all_threads = state.get_all_threads()
+
+    for thread_id, _ in pairs(threads) do
+      local thread_data = all_threads[thread_id]
+      if thread_data then
+        -- Get thread comments for preview
+        local thread_comments = state.get_thread_comments(thread_id)
+        local preview = ""
+        if #thread_comments > 0 then
+          preview = thread_comments[1].comment:sub(1, 50)
+          if #thread_comments[1].comment > 50 then
+            preview = preview .. "..."
+          end
+        end
+
+        table.insert(thread_list, {
+          id = thread_id,
+          display = string.format("[%s] %s (%d comments)", thread_data.status or "open", preview, #thread_comments),
+          thread_data = thread_data,
+        })
+      end
+    end
+
+    -- Sort by thread ID for consistent ordering
+    table.sort(thread_list, function(a, b)
+      return a.id < b.id
+    end)
+
+    -- Show selection UI
+    vim.ui.select(thread_list, {
+      prompt = "Select thread to resolve:",
+      format_item = function(item)
+        return item.display
+      end,
+    }, function(choice)
+      if choice then
+        state.resolve_thread(choice.id)
+      end
+    end)
   end
 end
 
