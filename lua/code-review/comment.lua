@@ -169,8 +169,8 @@ add_signs = function(bufnr, comments)
 
       -- If resolved thread, mark as resolved
       if comment.thread_id then
-        local state = require("code-review.state")
-        local thread_data = state.get_all_threads()[comment.thread_id]
+        local sign_state = require("code-review.state")
+        local thread_data = sign_state.get_all_threads()[comment.thread_id]
         if thread_data and thread_data.status == "resolved" then
           status = "resolved"
         end
@@ -245,8 +245,8 @@ add_virtual_text = function(bufnr, comments)
       end
 
       -- Check if thread is resolved
-      local state = require("code-review.state")
-      local thread_data = state.get_all_threads()[thread_id]
+      local comment_state = require("code-review.state")
+      local thread_data = comment_state.get_all_threads()[thread_id]
       if thread_data and thread_data.status == "resolved" then
         status = "resolved"
         show_virt_text = false -- Don't show virtual text for resolved

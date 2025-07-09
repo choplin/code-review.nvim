@@ -6,29 +6,6 @@ local storage_dir = nil
 local comments_cache = nil
 local cache_timestamp = 0
 
---- Parse timestamp from frontmatter format
----@param time_str string? Timestamp string
----@return number? timestamp
-local function parse_timestamp_from_frontmatter(time_str)
-  if not time_str then
-    return nil
-  end
-
-  -- Try to parse "2025-07-08 10:43:54" format
-  local year, month, day, hour, min, sec = time_str:match("(%d+)%-(%d+)%-(%d+) (%d+):(%d+):(%d+)")
-  if year then
-    return os.time({
-      year = tonumber(year),
-      month = tonumber(month),
-      day = tonumber(day),
-      hour = tonumber(hour),
-      min = tonumber(min),
-      sec = tonumber(sec),
-    })
-  end
-
-  return nil
-end
 
 --- Parse status from filename
 ---@param filename string

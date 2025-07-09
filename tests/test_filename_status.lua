@@ -1,6 +1,5 @@
 local state = require("code-review.state")
 local file_storage = require("code-review.storage.file")
-local config = require("code-review.config")
 
 -- Initialize plugin with file storage for realistic testing
 require("code-review").setup({
@@ -12,21 +11,6 @@ require("code-review").setup({
 
 local T = MiniTest.new_set()
 
--- Helper function to create a mock comment
-local function create_mock_comment(opts)
-  opts = opts or {}
-  return {
-    id = opts.id or "1234567890",
-    file = opts.file or "test.lua",
-    line_start = opts.line_start or 1,
-    line_end = opts.line_end or 1,
-    comment = opts.comment or "Test comment",
-    author = opts.author or "User",
-    time = opts.time or os.time(),
-    thread_id = opts.thread_id,
-    parent_id = opts.parent_id,
-  }
-end
 
 -- Setup and teardown hooks
 T["filename status management"] = MiniTest.new_set({

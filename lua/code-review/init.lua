@@ -232,13 +232,13 @@ function M.show_comment_at_cursor()
 
   -- Group comments by thread
   local threads = {}
-  for _, comment in ipairs(line_comments) do
-    local thread_id = comment.thread_id
+  for _, line_comment in ipairs(line_comments) do
+    local thread_id = line_comment.thread_id
     if thread_id then
       if not threads[thread_id] then
         threads[thread_id] = {}
       end
-      table.insert(threads[thread_id], comment)
+      table.insert(threads[thread_id], line_comment)
     end
   end
 
@@ -257,7 +257,7 @@ function M.show_comment_at_cursor()
     local thread_list = {}
     local all_threads = state.get_all_threads()
 
-    for thread_id, comments in pairs(threads) do
+    for thread_id, _ in pairs(threads) do
       local thread_data = all_threads[thread_id]
       local thread_comments = state.get_thread_comments(thread_id)
       local preview = ""
