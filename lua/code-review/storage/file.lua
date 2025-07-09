@@ -6,7 +6,6 @@ local storage_dir = nil
 local comments_cache = nil
 local cache_timestamp = 0
 
-
 --- Parse status from filename
 ---@param filename string
 ---@return string status, string id

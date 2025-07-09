@@ -11,7 +11,6 @@ require("code-review").setup({
 
 local T = MiniTest.new_set()
 
-
 -- Setup and teardown hooks
 T["filename status management"] = MiniTest.new_set({
   hooks = {
