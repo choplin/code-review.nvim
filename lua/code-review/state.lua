@@ -84,7 +84,7 @@ function M.add_comment(comment_data)
     local comment = storage_backend.get(id)
     if comment then
       comment.thread_id = thread_id
-      -- Status is now managed by filename, not in data
+      -- Status is now managed by filename (if status_management is enabled), not in data
 
       -- Re-save with thread info
       storage_backend.delete(id)
@@ -225,6 +225,12 @@ function M.resolve_thread(thread_id)
   if success then
     M.refresh_ui()
     vim.notify("Thread resolved", vim.log.levels.INFO)
+  else
+    -- Check if status management is disabled
+    local config = require("code-review.config")
+    if config.get("comment.storage.backend") == "file" and not config.get("comment.status_management") then
+      vim.notify("Status management is disabled. Enable 'status_management' to resolve threads.", vim.log.levels.WARN)
+    end
   end
 
   return success
@@ -240,6 +246,12 @@ function M.reopen_thread(thread_id)
   if success then
     M.refresh_ui()
     vim.notify("Thread reopened", vim.log.levels.INFO)
+  else
+    -- Check if status management is disabled
+    local config = require("code-review.config")
+    if config.get("comment.storage.backend") == "file" and not config.get("comment.status_management") then
+      vim.notify("Status management is disabled. Enable 'status_management' to reopen threads.", vim.log.levels.WARN)
+    end
   end
 
   return success

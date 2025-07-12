@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Comment files now use status prefixes: `action-required_*.md`, `waiting-review_*.md`, `resolved_*.md`
   - Status automatically updates when replying to threads
   - Status-specific colors and icons in UI
+- Optional status management configuration
+  - New `comment.status_management` configuration option (default: false)
+  - Status management only works when both `storage.backend = "file"` and `status_management = true`
+  - Warning messages when trying to resolve/reopen threads with status management disabled
 
 ## [0.4.0] - 2025-07-07
 

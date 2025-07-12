@@ -182,6 +182,7 @@ T["thread management"]["preserves thread state across storage backends"] = funct
   require("code-review").setup({
     comment = {
       storage = { backend = "file" },
+      status_management = true, -- Enable status management for this test
     },
   })
   state.init()
