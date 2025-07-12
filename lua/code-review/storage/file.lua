@@ -8,18 +8,23 @@ local cache_timestamp = 0
 
 --- Parse status from filename
 ---@param filename string
----@return string status, string id
+---@return string|nil status, string id
 local function parse_filename(filename)
-  -- Pattern: status_timestamp_thread.md
-  local status, id = filename:match("^([^_]+)_(.+)%.md$")
-  if status and id then
-    return status, id
+  local config = require("code-review.config")
+  local status_management = config.get("comment.status_management")
+
+  if status_management then
+    -- Pattern: status_timestamp_thread.md
+    local status, id = filename:match("^([^_]+)_(.+)%.md$")
+    if status and id then
+      return status, id
+    end
   end
 
-  -- Legacy format: timestamp_thread.md
+  -- Legacy format or status_management disabled: timestamp_thread.md
   local legacy_id = filename:match("^(.+)%.md$")
   if legacy_id then
-    return "action-required", legacy_id
+    return status_management and "action-required" or nil, legacy_id
   end
 
   return nil, nil
@@ -27,10 +32,17 @@ end
 
 --- Generate filename with status
 ---@param id string
----@param status string
+---@param status string|nil
 ---@return string
 local function make_filename(id, status)
-  return status .. "_" .. id .. ".md"
+  local config = require("code-review.config")
+  local status_management = config.get("comment.status_management")
+
+  if status_management and status then
+    return status .. "_" .. id .. ".md"
+  else
+    return id .. ".md"
+  end
 end
 
 --- Determine thread status based on latest author
@@ -73,6 +85,9 @@ end
 ---@param status string? Optional status override
 ---@return string
 local function get_comment_filename(comment_data, status)
+  local config = require("code-review.config")
+  local status_management = config.get("comment.status_management")
+
   local id
   if comment_data.id then
     -- Extract ID from existing filename if needed
@@ -84,8 +99,12 @@ local function get_comment_filename(comment_data, status)
     id = filename:match("^(.+)%.md$")
   end
 
-  -- Default status for new comments is "action-required"
-  status = status or "action-required"
+  -- Default status for new comments is "action-required" if status management is enabled
+  if status_management then
+    status = status or "action-required"
+  else
+    status = nil
+  end
   return make_filename(id, status)
 end
 
@@ -192,7 +211,7 @@ local function parse_comment_from_file(content, filename)
           timestamp = parsed_timestamp,
           context_lines = context_lines,
           thread_id = frontmatter.thread_id,
-          thread_status = status, -- Add status from filename
+          thread_status = status, -- Add status from filename (may be nil if status_management is disabled)
         }
       elseif line == "---" and in_comments_section then -- luacheck: ignore 542
         -- Comment separator, ignore
@@ -343,12 +362,25 @@ function M.add(comment_data)
         return (a.timestamp or 0) < (b.timestamp or 0)
       end)
 
-      -- Determine new status based on latest author
-      local new_status = determine_thread_status(thread_comments)
+      local config = require("code-review.config")
+      local status_management = config.get("comment.status_management")
+
+      -- Determine new status based on latest author (only if status management is enabled)
+      local new_status = nil
+      if status_management then
+        new_status = determine_thread_status(thread_comments)
+      end
 
       -- Get current filename from existing file
-      local old_files = vim.fn.glob(get_storage_dir() .. "/*_" .. root_comment.id .. ".md", false, true)
+      local pattern = status_management and ("/*_" .. root_comment.id .. ".md") or ("/" .. root_comment.id .. ".md")
+      local old_files = vim.fn.glob(get_storage_dir() .. pattern, false, true)
       local old_filepath = old_files[1]
+
+      -- Fallback for files without status prefix when status_management is enabled
+      if not old_filepath and status_management then
+        old_files = vim.fn.glob(get_storage_dir() .. "/" .. root_comment.id .. ".md", false, true)
+        old_filepath = old_files[1]
+      end
 
       -- Generate new filename with updated status
       local new_filename = make_filename(root_comment.id, new_status)
@@ -416,16 +448,20 @@ end
 ---@return boolean success
 function M.delete(id)
   local dir = get_storage_dir()
+  local config = require("code-review.config")
+  local status_management = config.get("comment.status_management")
 
-  -- Find file with any status prefix
-  local files = vim.fn.glob(dir .. "/*_" .. id .. ".md", false, true)
-  if #files > 0 then
-    vim.fn.delete(files[1])
-    invalidate_cache()
-    return true
+  -- Find file with any status prefix (if status management is enabled)
+  if status_management then
+    local files = vim.fn.glob(dir .. "/*_" .. id .. ".md", false, true)
+    if #files > 0 then
+      vim.fn.delete(files[1])
+      invalidate_cache()
+      return true
+    end
   end
 
-  -- Fallback for legacy format
+  -- Fallback for legacy format or status_management disabled
   local legacy_filepath = dir .. "/" .. id .. ".md"
   if vim.fn.filereadable(legacy_filepath) == 1 then
     vim.fn.delete(legacy_filepath)
@@ -524,19 +560,25 @@ end
 ---@return table|nil
 function M.get_thread(thread_id)
   local comments = load_comments()
+  local config = require("code-review.config")
+  local status_management = config.get("comment.status_management")
 
   -- Find the root comment of this thread
   for _, comment in ipairs(comments) do
     if comment.thread_id == thread_id and (not comment.parent_id or comment.id == thread_id:match("^(.+)_thread$")) then
-      -- Find the file to get status
-      local files = vim.fn.glob(get_storage_dir() .. "/*_" .. comment.id .. ".md", false, true)
-      local status = "action-required"
+      local status = nil
 
-      if files[1] then
-        local filename = vim.fn.fnamemodify(files[1], ":t")
-        local parsed_status = parse_filename(filename)
-        if parsed_status then
-          status = parsed_status
+      if status_management then
+        -- Find the file to get status
+        local files = vim.fn.glob(get_storage_dir() .. "/*_" .. comment.id .. ".md", false, true)
+        status = "action-required"
+
+        if files[1] then
+          local filename = vim.fn.fnamemodify(files[1], ":t")
+          local parsed_status = parse_filename(filename)
+          if parsed_status then
+            status = parsed_status
+          end
         end
       end
 
@@ -562,6 +604,14 @@ end
 ---@param resolved_by string|nil User who resolved (unused now)
 ---@return boolean success
 function M.update_thread_status(thread_id, status, resolved_by)
+  local config = require("code-review.config")
+  local status_management = config.get("comment.status_management")
+
+  -- If status management is disabled, return false to indicate no action taken
+  if not status_management then
+    return false
+  end
+
   local comments = load_comments()
 
   -- Find root comment of this thread
@@ -596,6 +646,12 @@ function M.update_thread_status(thread_id, status, resolved_by)
   local old_files = vim.fn.glob(get_storage_dir() .. "/*_" .. root_comment.id .. ".md", false, true)
   local old_filepath = old_files[1]
 
+  -- Fallback for files without status prefix
+  if not old_filepath then
+    old_files = vim.fn.glob(get_storage_dir() .. "/" .. root_comment.id .. ".md", false, true)
+    old_filepath = old_files[1]
+  end
+
   if not old_filepath then
     return false
   end
@@ -617,6 +673,8 @@ end
 ---@return table<string, table>
 function M.get_all_threads()
   local comments = load_comments()
+  local config = require("code-review.config")
+  local status_management = config.get("comment.status_management")
   local threads = {}
   local thread_files = {}
 
@@ -625,15 +683,18 @@ function M.get_all_threads()
   for _, filepath in ipairs(files) do
     local filename = vim.fn.fnamemodify(filepath, ":t")
     local status, id = parse_filename(filename)
-    if status and id then
-      thread_files[id] = status
+    if id then
+      thread_files[id] = status -- status may be nil if status_management is disabled
     end
   end
 
   -- Extract thread info from root comments
   for _, comment in ipairs(comments) do
     if comment.thread_id and (not comment.parent_id or comment.id == comment.thread_id:match("^(.+)_thread$")) then
-      local status = thread_files[comment.id] or "action-required"
+      local status = nil
+      if status_management then
+        status = thread_files[comment.id] or "action-required"
+      end
       threads[comment.thread_id] = {
         id = comment.thread_id,
         status = status,

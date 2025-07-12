@@ -71,6 +71,9 @@ local defaults = {
     -- Comments from this author trigger "waiting-review" status
     -- Comments from other authors trigger "action-required" status
     claude_code_author = "Claude Code",
+    -- Enable filename-based status management (only works with file storage backend)
+    -- When enabled, review files are prefixed with status (action-required_, waiting-review_, resolved_)
+    status_management = false,
   },
   -- Keymaps (set to false to disable all keymaps)
   keymaps = {
